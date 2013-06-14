@@ -3,7 +3,6 @@
 # ###################################################
 # @file AtlasGenerator.py
 # @author PJ O Halloran (pjohalloran at gmail dot com)
-# @date 11/06/2012
 #
 # Parses all images in a directory and
 # generates texture atlases and an xml dictionary
@@ -13,7 +12,7 @@
 # and create the atlases and standard python for
 # creating the atlas xml dictionary file.
 #
-# Texture atlas packing algorithm is a python 
+# Texture atlas packing algorithm is a python
 # implementation of the C TexturePacker algorithm
 # (c) 2009 by John W. Ratcliff.
 #
@@ -38,12 +37,10 @@
 #
 # ###################################################
 
-
-# ###################################################
-# Module definitions.
-# ###################################################
 from PIL import Image
-import sys, os.path, shutil, argparse
+import os.path
+import shutil
+import argparse
 import xml.dom.minidom
 
 
@@ -58,12 +55,6 @@ def IsPowerOfTwo(number=0):
 #
 # ###################################################
 class Rect:
-    def __init__(self):
-        self.mX1 = 0
-        self.mY1 = 0
-        self.mX2 = 0
-        self.mY2 = 0
-    
     def __init__(self, x1, y1, x2, y2):
         self.mX1 = x1
         self.mY1 = y1
@@ -80,10 +71,10 @@ class Rect:
 
     def GetY1(self):
         return (self.mY1)
-    
+
     def GetX2(self):
         return (self.mX2)
-    
+
     def GetY2(self):
         return (self.mY2)
 
@@ -111,9 +102,7 @@ class Rect:
     def Print(self):
         print "Rect = (x1=", self.mX1, "y1=", self.mY1, "x2=", self.mX2, "y2=", self.mY2, "width=", self.GetWidth(), "height=", self.GetHeight(), ")"
 
-# ###################################################
-#
-# ###################################################
+
 class Texture:
     def __init__(self, width, height, name=""):
         self.mWidth = width
@@ -126,7 +115,7 @@ class Texture:
         self.mLongestEdge = width if width > height else height
         self.mName = name
 
-    def Place(self, x, y, flipped = False):
+    def Place(self, x, y, flipped=False):
         self.mX = x
         self.mY = y
         self.mFlipped = flipped
@@ -138,7 +127,7 @@ class Texture:
 
     def SetX(self, x):
         self.mX = x
-        
+
     def GetY(self):
         return (self.mY)
 
@@ -156,7 +145,7 @@ class Texture:
 
     def SetWidth(self, width):
         self.mWidth = width
-        
+
     def SetHeight(self, height):
         self.mHeight = height
 
@@ -190,16 +179,8 @@ class Texture:
     def Print(self):
         print "Texture = (", self.GetRect().Print(), "area=", self.mArea, "flipped=", self.mFlipped, "placed=", self.mPlaced, "longestEdge=", self.mLongestEdge, "name=", self.mName, ")"
 
-# ###################################################
-#
-# ###################################################
+
 class Node:
-    def __init__(self):
-        self.mX = 0
-        self.mY = 0
-        self.mWidth = 0
-        self.mHeight = 0
-    
     def __init__(self, x, y, width, height):
         self.mX = x
         self.mY = y
@@ -209,7 +190,7 @@ class Node:
     def Fits(self, width, height):
         # 0 = bool, 1 = edgeCount
         resultList = []
-        
+
         result = False
         edgeCount = 0
 
@@ -267,25 +248,25 @@ class Node:
         ret = False
         r1 = self.GetRect()
         r2 = node.GetRect()
-        
+
         r1.SetX2(r1.GetX2() + 1)
         r1.SetY2(r1.GetY2() + 1)
         r2.SetX2(r2.GetX2() + 1)
         r2.SetY2(r2.GetY2() + 1)
 
         if (r1.GetX1() == r2.GetX1() and r1.GetX2() == r2.GetX2() and r1.GetY1() == r2.GetY2()):
-            mY = node.GetY()
-            mHeight += node.GetRect().GetHeight()
+            self.mY = node.GetY()
+            self.mHeight += node.GetRect().GetHeight()
             ret = True
         elif (r1.GetX1() == r2.GetX1() and r1.GetX2() == r2.GetX2() and r1.GetY2() == r2.GetY1()):
-            mHeight += node.GetRect().GetHeight()
+            self.mHeight += node.GetRect().GetHeight()
             ret = True
         elif (r1.GetY1() == r2.GetY1() and r1.GetY2() == r2.GetY1() and r1.GetX1() == r2.GetX2()):
-            mX = node.GetX()
-            mWidth += node.GetRect().GetWidth()
+            self.mX = node.GetX()
+            self.mWidth += node.GetRect().GetWidth()
             ret = True
         elif (r1.GetY1() == r2.GetY1() and r1.GetY2() == r2.GetY1() and r1.GetX2() == r2.GetX1()):
-            mWidth += node.GetRect().GetWidth()
+            self.mWidth += node.GetRect().GetWidth()
             ret = True
 
         return ret
@@ -293,9 +274,7 @@ class Node:
     def Print(self):
         print "Node = (x=", self.mX, "y=", self.mY, "width=", self.mWidth, "height=", self.mHeight, ")"
 
-# ###################################################
-#
-# ###################################################
+
 class TexturePacker:
     def __init__(self):
         self.Reset()
@@ -307,7 +286,7 @@ class TexturePacker:
         for node in self.mFreeArr:
             node.Print()
         print "Area = ", self.mTotalArea, "longest edge = ", self.mLongestEdge
-    
+
     def Reset(self):
         self.mTextureArr = []
         self.mFreeArr = []
@@ -335,7 +314,7 @@ class TexturePacker:
     def GetTextureByName(self, name=""):
         if (len(name) == 0):
             return (None)
-        
+
         index = 0
         tex = None
         for t in self.mTextureArr:
@@ -345,32 +324,32 @@ class TexturePacker:
                     tex.FlipDimensions()
                 return (tex)
             index += 1
-        
+
         return (tex)
 
     def GetTexture(self, index):
         if(index < 0 or index >= len(self.mTextureArr)):
-           return None
-        
+            return None
+
         tex = self.mTextureArr[index]
         if(tex.IsFlipped()):
-           tex.FlipDimensions()
-           return (True)
-           
+            tex.FlipDimensions()
+            return (True)
+
         return (False)
 
     def MergeNodes(self):
         for f in self.mFreeArr:
-           fIdx = 0
-           for s in self.mFreeArr:
+            fIdx = 0
+            for s in self.mFreeArr:
                 if (f != s):
                     if (f.Merge(s)):
                         self.mFreeArr[fIdx] = f
                         return (True)
-           fIdx += 1
-           
+            fIdx += 1
+
         return (False)
-    
+
     def Validate(self):
         for f in self.mFreeArr:
             for c in self.mFreeArr:
@@ -399,7 +378,6 @@ class TexturePacker:
         count = self.mTotalArea / (self.mLongestEdge * self.mLongestEdge)
         height = (count + 2) * self.mLongestEdge
 
-        mDebugCount = 0
         self.AddNode(0, 0, width, height)
 
         # We must place each texture
@@ -408,7 +386,7 @@ class TexturePacker:
             index = 0
             longestEdge = 0
             mostArea = 0
-            
+
             # We first search for the texture with the longest edge, placing it first.
             # And the most area...
             j = 0
@@ -424,7 +402,7 @@ class TexturePacker:
                             mostArea = tmpTex.GetArea()
                             index = j
                 j += 1
-            
+
             # For the texture with the longest edge we place it according to this criteria.
             #   (1) If it is a perfect match, we always accept it as it causes the least amount of fragmentation.
             #   (2) A match of one edge with the minimum area left over after the split.
@@ -441,7 +419,7 @@ class TexturePacker:
             bestFitNode = Node(0, 0, 0, 0)
             previousNodeIdx = 0
             edgeCount = 0
-            
+
             # Walk the singly linked list of free nodes
             # see if it will fit into any currently free space
             for currNode in self.mFreeArr:
@@ -449,7 +427,7 @@ class TexturePacker:
                 ec = resultFitsArr[1]
 
                 # see if the texture will fit into this slot, and if so how many edges does it share.
-                if (resultFitsArr[0] == True):
+                if (resultFitsArr[0] is True):
                     if (ec == 2):
                         previousBestFitNodeIdx = previousNodeIdx
                         bestFitNode = currNode
@@ -473,14 +451,14 @@ class TexturePacker:
 
                 previousNodeIdx = idx
                 idx += 1
-            
+
             # we should always find a fit location!
             if(bestFitNode.GetX() == 0 and bestFitNode.GetY() == 0 and bestFitNode.GetRect().GetWidth() == 0 and bestFitNode.GetRect().GetHeight() == 0):
                 print "TexturePacker::PackTextures() BestFit node not found!!"
                 exit(1)
 
             self.Validate()
-            
+
             if (edgeCount == 0):
                 if (tex.GetLongestEdge() <= bestFitNode.GetRect().GetWidth()):
                     if (tex.GetHeight() > tex.GetWidth()):
@@ -510,7 +488,7 @@ class TexturePacker:
                     bestFitNode.SetWidth(bestFitNode.GetWidth() - tex.GetWidth())
                     bestFitNode.SetHeight(tex.GetHeight())
                     self.Validate()
-           
+
             elif(edgeCount == 1):
                 if (tex.GetWidth() == bestFitNode.GetRect().GetWidth()):
                     tex.Place(bestFitNode.GetX(), bestFitNode.GetY(), False)
@@ -532,7 +510,7 @@ class TexturePacker:
                     bestFitNode.SetY(bestFitNode.GetY() + tex.GetWidth())
                     bestFitNode.SetHeight(bestFitNode.GetHeight() - tex.GetWidth())
                     self.Validate()
-           
+
             elif(edgeCount == 2):
                 flipped = tex.GetWidth() != bestFitNode.GetRect().GetWidth() or tex.GetHeight() != bestFitNode.GetRect().GetHeight()
                 tex.Place(bestFitNode.GetX(), bestFitNode.GetY(), flipped)
@@ -543,11 +521,11 @@ class TexturePacker:
             # Save latest version of texture and Node back into lists since python is pass by value
             self.mFreeArr[nodeIndex] = bestFitNode
             self.mTextureArr[index] = tex
-            
+
             loopI += 1
-                        
+
         while (self.MergeNodes()):
-           print "Merging nodes"
+            print "Merging nodes"
 
         index = 0
         height = 0
@@ -558,7 +536,7 @@ class TexturePacker:
                 t.SetX(t.GetX() + 1)
                 t.SetY(t.GetY() + 1)
                 self.mTextureArr[index] = t
-            
+
             y = 0
             if (t.IsFlipped()):
                 y = t.GetY() + t.GetWidth()
@@ -567,11 +545,11 @@ class TexturePacker:
 
             if (y > height):
                 height = y
-            
+
             index += 1
 
         if (forcePowerOfTwo):
-           height = self.GetNextPowerOfTwo(height)
+            height = self.GetNextPowerOfTwo(height)
 
         returnList.append(width)
         returnList.append(height)
@@ -583,21 +561,21 @@ class TexturePacker:
 # ###################################################
 
 # Directory where images are not baked into texture atlases during resource build.
-gNoAtlasDir="NoAtlas/"
+gNoAtlasDir = "NoAtlas/"
 # Location in resources where textures are grouped.
-gImagesDir="textures/"
+gImagesDir = "textures/"
 
 # Command line args and parser
-gCommandArgs=None
-gParser=None
+gCommandArgs = None
+gParser = None
 
-gOutputAtlasXml="AtlasInfo.xml"
+gOutputAtlasXml = "AtlasInfo.xml"
 
 gDoc = xml.dom.minidom.Document()
 gRootElement = gDoc.createElement("Root")
 gDoc.appendChild(gRootElement)
 
-gTexturePacker=TexturePacker()
+gTexturePacker = TexturePacker()
 
 
 # ###################################################
@@ -606,24 +584,24 @@ gTexturePacker=TexturePacker()
 def MakeAtlas(texMode, dirPath, atlasPath, dirName):
     # 4 xml file to be read in at runtime which holds the texture coordinates, etc. in the atlas for each image stored in the atlas.
     print texMode, dirPath, atlasPath
-    
+
     childDirs = os.listdir(dirPath)
-    
+
     index = 0
     imgNameList = []
     imagesPathList = []
     imagesList = []
-    
+
     # Open all images in the directory and add to the packer.
     for currPath in childDirs:
         #print "Doing ", currPath, os.path.isdir(currPath)
-        
+
         imgElement = gDoc.createElement("image")
         imgElement.setAttribute("imagefile", currPath)
-        
+
         if (currPath.startswith(".") or os.path.isdir(os.path.join(dirPath, currPath))):
             continue
-        
+
         try:
             imgNameList.append(currPath)
             imagesPathList.append(dirPath + "/" + currPath)
@@ -633,11 +611,9 @@ def MakeAtlas(texMode, dirPath, atlasPath, dirName):
             index += 1
         except (IOError):
             print "ERROR: PIL failed to open file", dirPath + currPath
-    
+
     # Pack the textures into an atlas as efficiently as possible.
     packResult = gTexturePacker.PackTextures(True, True)
-    atlasWidth = float(packResult[0])
-    atlasHeight = float(packResult[1])
     borderSize = 1
 
     atlasElement = gDoc.createElement("Atlas")
@@ -653,47 +629,45 @@ def MakeAtlas(texMode, dirPath, atlasPath, dirName):
         print "MakeAtlas(): ERROR - number of textures in Packer is different to number of images in dir", gTexturePacker.GetNumberTextures(), len(imagesPathList), len(imagesList)
         exit(1)
 
-    atlasTest=Image.new(texMode, (packResult[0], packResult[1]), (128, 128, 128))
-    
+    atlasTest = Image.new(texMode, (packResult[0], packResult[1]), (128, 128, 128))
+
     index = 0
     for tmp in imagesList:
         img = tmp[0]
         imgElement = tmp[1]
         tex = gTexturePacker.GetTextureByName(imgNameList[index])
-        
+
         atlasTest.paste(img, (tex.GetX(), tex.GetY()))
-        
+
         imgElement.setAttribute("x", str(tex.GetX()))
         imgElement.setAttribute("y", str(tex.GetY()))
         imgElement.setAttribute("width", str(tex.GetWidth()))
         imgElement.setAttribute("height", str(tex.GetHeight()))
         imgElement.setAttribute("flipped", str(tex.IsFlipped()))
-        
+
         atlasElement.appendChild(imgElement)
 
         index += 1
-        
+
 #        #print imagesList
 #        print imagesPathList
-#        
+#
 #        if (os.path.exists(resPath + "/" + "test1." + gCommandArgs['atlas_type'])):
 #        print "removing file"
 #        os.remove(resPath + "/" + "test1." + gCommandArgs['atlas_type'])
-        
+
     atlasTest.save(atlasPath + "/" + os.path.basename(dirPath) + "." + gCommandArgs['atlas_type'], gCommandArgs['atlas_type'])
     if (gCommandArgs['verbose']):
         atlasTest.show()
 
     gRootElement.appendChild(atlasElement)
 
-# ###################################################
-#
-# ###################################################
+
 def GenerateAtlases(texMode, atlasPath, resPath):
     print texMode, atlasPath, resPath
-    
+
     childDirs = os.listdir(resPath)
-    
+
     for currPath in childDirs:
 #        print "Doing ", currPath, os.path.isdir(currPath)
         if (currPath.startswith(".")):
@@ -709,15 +683,15 @@ def GenerateAtlases(texMode, atlasPath, resPath):
 def ParseCommandLineArgs():
     global gParser
     global gCommandArgs
-    
-    gParser=argparse.ArgumentParser(description='GameFramework command line tool for baking game images into Texture Atlases.')
 
-    gParser.add_argument('-v', '--verbose', action='store_true');
+    gParser = argparse.ArgumentParser(description='GameFramework command line tool for baking game images into Texture Atlases.')
+
+    gParser.add_argument('-v', '--verbose', action='store_true')
     gParser.add_argument('-r', '--res-path', action='store', required=True, help='The location of the games resources.')
     gParser.add_argument('-t', '--atlas-type', action='store', required=False, default='TGA', help='The file type of the texture atlases')
     gParser.add_argument('-m', '--atlas-mode', action='store', required=False, default='RGBA', help='The bit mode of the texture atlases (RGBA, RGB)')
-    
-    gCommandArgs=vars(gParser.parse_args())
+
+    gCommandArgs = vars(gParser.parse_args())
 
 
 # ###################################################
@@ -727,14 +701,14 @@ def Main():
     global gParser
     global gCommandArgs
     global gImagesDir
-    
+
     ParseCommandLineArgs()
     #print "len(gCommandArgs)=", len(gCommandArgs)
     #print "res_path = ", gCommandArgs['res_path']
     #print "atlas_size = ", gCommandArgs['atlas_size']
     #print "atlas_type = ", gCommandArgs['atlas_type']
     #print "atlas_mode = ", gCommandArgs['atlas_mode']
-    
+
     if (not os.path.isdir(gCommandArgs['res_path'])):
         print "Not passed a valid directory"
         gParser.print_help()
@@ -745,13 +719,13 @@ def Main():
         gParser.print_help()
         return (1)
 
-    atlasesPath=gCommandArgs['res_path'] + "/" + "atlases/"
+    atlasesPath = gCommandArgs['res_path'] + "/" + "atlases/"
 
     if(os.path.isdir(atlasesPath)):
         shutil.rmtree(atlasesPath)
     os.mkdir(atlasesPath)
 
-    res=GenerateAtlases(gCommandArgs['atlas_mode'], atlasesPath, gCommandArgs['res_path'] + "/" + gImagesDir)
+    res = GenerateAtlases(gCommandArgs['atlas_mode'], atlasesPath, gCommandArgs['res_path'] + "/" + gImagesDir)
 
     file_object = open(atlasesPath + "atlasDictionary.xml", "w")
     gDoc.writexml(file_object, indent="\n", addindent="    ")
