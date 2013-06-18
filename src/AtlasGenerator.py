@@ -182,7 +182,7 @@ def ParseCommandLineArgs():
 # ###################################################
 #
 # ###################################################
-def Main():
+def main():
     global gParser
     global gCommandArgs
     global gImagesDir
@@ -219,8 +219,5 @@ def Main():
     return (res)
 
 
-# ###################################################
-# Main entry point.
-# ###################################################
-res = Main()
-exit(res)
+if __name__ == "__main__":
+    main()
