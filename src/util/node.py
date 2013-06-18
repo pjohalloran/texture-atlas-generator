@@ -3,35 +3,35 @@ from math.rect import Rect
 
 class Node:
     def __init__(self, x, y, width, height):
-        self.mX = x
-        self.mY = y
-        self.mWidth = width
-        self.mHeight = height
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
 
-    def Fits(self, width, height):
+    def does_rect_fit(self, width, height):
         # 0 = bool, 1 = edgeCount
         resultList = []
 
         result = False
         edgeCount = 0
 
-        if (width == self.mWidth or height == self.mHeight or width == self.mHeight or height == self.mWidth):
-            if (width == self.mWidth):
+        if (width == self.width or height == self.height or width == self.height or height == self.width):
+            if (width == self.width):
                 edgeCount += 1
-            if (height == self.mHeight):
+            if (height == self.height):
                 edgeCount += 1
-            elif (width == self.mHeight):
+            elif (width == self.height):
                 edgeCount += 1
-                if (height == self.mWidth):
+                if (height == self.width):
                     edgeCount += 1
-            elif (height == self.mWidth):
+            elif (height == self.width):
                 edgeCount += 1
-            elif (height == self.mHeight):
+            elif (height == self.height):
                 edgeCount += 1
 
-        if (width <= self.mWidth and height <= self.mHeight):
+        if (width <= self.width and height <= self.height):
             result = True
-        elif (height <= self.mWidth and width <= self.mHeight):
+        elif (height <= self.width and width <= self.height):
             result = True
 
         resultList.append(result)
@@ -39,58 +39,37 @@ class Node:
 
         return (resultList)
 
-    def GetRect(self):
-        return (Rect(self.mX, self.mY, self.mX + self.mWidth, self.mY + self.mHeight))
+    def get_rect(self):
+        return Rect(self.x, self.y, self.x + self.width, self.y + self.height)
 
-    def GetX(self):
-        return (self.mX)
-
-    def GetY(self):
-        return (self.mY)
-
-    def SetX(self, x):
-        self.mX = x
-
-    def SetY(self, y):
-        self.mY = y
-
-    def SetWidth(self, width):
-        self.mWidth = width
-
-    def SetHeight(self, height):
-        self.mHeight = height
-
-    def Validate(self, node):
-        r1 = self.GetRect()
-        r2 = node.GetRect()
+    def validate(self, node):
+        r1 = self.get_rect()
+        r2 = node.get_rect()
         return (r1 != r2)
 
-    def Merge(self, node):
+    def merge(self, node):
         ret = False
-        r1 = self.GetRect()
-        r2 = node.GetRect()
+        r1 = self.get_rect()
+        r2 = node.get_rect()
 
-        r1.SetX2(r1.GetX2() + 1)
-        r1.SetY2(r1.GetY2() + 1)
-        r2.SetX2(r2.GetX2() + 1)
-        r2.SetY2(r2.GetY2() + 1)
+        r1.x2 += 1
+        r1.y2 += 1
+        r2.x2 += 1
+        r2.y2 += 1
 
-        if (r1.GetX1() == r2.GetX1() and r1.GetX2() == r2.GetX2() and r1.GetY1() == r2.GetY2()):
-            self.mY = node.GetY()
-            self.mHeight += node.GetRect().GetHeight()
+        if (r1.x1 == r2.x1 and r1.x2 == r2.x2 and r1.y1 == r2.y2):
+            self.y = node.y
+            self.height += node.get_rect().height
             ret = True
-        elif (r1.GetX1() == r2.GetX1() and r1.GetX2() == r2.GetX2() and r1.GetY2() == r2.GetY1()):
-            self.mHeight += node.GetRect().GetHeight()
+        elif (r1.x1 == r2.x1 and r1.x2 == r2.x2 and r1.y2 == r2.y1):
+            self.height += node.get_rect().height
             ret = True
-        elif (r1.GetY1() == r2.GetY1() and r1.GetY2() == r2.GetY1() and r1.GetX1() == r2.GetX2()):
-            self.mX = node.GetX()
-            self.mWidth += node.GetRect().GetWidth()
+        elif (r1.y1 == r2.y1 and r1.y2 == r2.y1 and r1.x1 == r2.x2):
+            self.x = node.x
+            self.width += node.get_rect().width
             ret = True
-        elif (r1.GetY1() == r2.GetY1() and r1.GetY2() == r2.GetY1() and r1.GetX2() == r2.GetX1()):
-            self.mWidth += node.GetRect().GetWidth()
+        elif (r1.y1 == r2.y1 and r1.y2 == r2.y1 and r1.x2 == r2.x1):
+            self.width += node.get_rect().width
             ret = True
 
         return ret
-
-    def Print(self):
-        print "Node = (x=", self.mX, "y=", self.mY, "width=", self.mWidth, "height=", self.mHeight, ")"

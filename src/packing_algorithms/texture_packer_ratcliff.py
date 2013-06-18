@@ -1,89 +1,76 @@
 from util.node import Node
 from util.texture import Texture
+from math.math import next_power_of_two
 
 
 class TexturePacker:
     def __init__(self):
-        self.Reset()
+        self.reset()
 
-    def Print(self):
-        print "List of textures:"
-        for tex in self.mTextureArr:
-            tex.Print()
-        for node in self.mFreeArr:
-            node.Print()
-        print "Area = ", self.mTotalArea, "longest edge = ", self.mLongestEdge
+    def reset(self):
+        self.texArr = []
+        self.freeArr = []
+        self.longestEdge = 0
+        self.totalArea = 0
 
-    def Reset(self):
-        self.mTextureArr = []
-        self.mFreeArr = []
-        self.mLongestEdge = 0
-        self.mTotalArea = 0
+    def get_texture_count(self):
+        return len(self.texArr)
 
-    def GetNumberTextures(self):
-        return (len(self.mTextureArr))
+    def add_texture(self, width, height, name=""):
+        self.texArr.append(Texture(width, height, name))
+        self.longestEdge = width if (width > self.longestEdge) else self.longestEdge
+        self.longestEdge = height if (height > self.longestEdge) else self.longestEdge
+        self.totalArea += width * height
 
-    def AddTexture(self, width, height, name=""):
-        self.mTextureArr.append(Texture(width, height, name))
-        self.mLongestEdge = width if (width > self.mLongestEdge) else self.mLongestEdge
-        self.mLongestEdge = height if (height > self.mLongestEdge) else self.mLongestEdge
-        self.mTotalArea += width * height
+    def add_node(self, x, y, width, height):
+        self.freeArr.append(Node(x, y, width, height))
 
-    def AddNode(self, x, y, width, height):
-        self.mFreeArr.append(Node(x, y, width, height))
-
-    def GetNextPowerOfTwo(self, num):
-        p = 1
-        while (p < num):
-            p *= 2
-        return (p)
-
-    def GetTextureByName(self, name=""):
+    def get_texture_by_name(self, name=""):
         if (len(name) == 0):
-            return (None)
+            return None
 
         index = 0
         tex = None
-        for t in self.mTextureArr:
-            if (t.GetName() == name):
+        for t in self.texArr:
+            if (t.name == name):
                 tex = t
-                if(tex.IsFlipped()):
-                    tex.FlipDimensions()
-                return (tex)
+                if (tex.flipped):
+                    tex.flip_dimensions()
+                return tex
             index += 1
 
-        return (tex)
+        return tex
 
-    def GetTexture(self, index):
-        if(index < 0 or index >= len(self.mTextureArr)):
+    def get_texture(self, index):
+        if (index < 0 or index >= len(self.texArr)):
             return None
 
-        tex = self.mTextureArr[index]
-        if(tex.IsFlipped()):
-            tex.FlipDimensions()
-            return (True)
+        tex = self.texArr[index]
+        if (tex.flipped):
+            tex.flip_dimensions()
+            return True
 
-        return (False)
+        return False
 
-    def MergeNodes(self):
-        for f in self.mFreeArr:
+    def merge_nodes(self):
+        for f in self.freeArr:
             fIdx = 0
-            for s in self.mFreeArr:
+            for s in self.freeArr:
                 if (f != s):
-                    if (f.Merge(s)):
-                        self.mFreeArr[fIdx] = f
-                        return (True)
+                    if (f.merge(s)):
+                        self.freeArr[fIdx] = f
+                        return True
             fIdx += 1
 
-        return (False)
+        return False
 
-    def Validate(self):
-        for f in self.mFreeArr:
-            for c in self.mFreeArr:
+    def validate(self):
+        for f in self.freeArr:
+            for c in self.freeArr:
                 if (f != c):
-                    f.Validate(c)
+                    f.validate(c)
 
-    def PackTextures(self, forcePowerOfTwo, onePixelBorder):
+    def pack_textures(self, forcePowerOfTwo, onePixelBorder):
         # 0 = width
         # 1 = height
         # 3 = returnValue
@@ -91,25 +78,25 @@ class TexturePacker:
 
         if (onePixelBorder):
             i = 0
-            for t in self.mTextureArr:
-                t.SetWidth(t.GetWidth() + 2)
-                t.SetHeight(t.GetHeight() + 2)
-                self.mTextureArr[i] = t
+            for t in self.texArr:
+                t.width += 2
+                t.height += 2
+                self.texArr[i] = t
                 i += 1
-            self.mLongestEdge += 2
+            self.longestEdge += 2
 
         if (forcePowerOfTwo):
-            self.mLongestEdge = self.GetNextPowerOfTwo(self.mLongestEdge)
+            self.longestEdge = next_power_of_two(self.longestEdge)
 
-        width = self.mLongestEdge
-        count = self.mTotalArea / (self.mLongestEdge * self.mLongestEdge)
-        height = (count + 2) * self.mLongestEdge
+        width = self.longestEdge
+        count = self.totalArea / (self.longestEdge * self.longestEdge)
+        height = (count + 2) * self.longestEdge
 
-        self.AddNode(0, 0, width, height)
+        self.add_node(0, 0, width, height)
 
-        # We must place each texture
+        # We must place_texture each texture
         loopI = 0
-        while (loopI < len(self.mTextureArr)):
+        while (loopI < len(self.texArr)):
             index = 0
             longestEdge = 0
             mostArea = 0
@@ -117,25 +104,25 @@ class TexturePacker:
             # We first search for the texture with the longest edge, placing it first.
             # And the most area...
             j = 0
-            for tmpTex in self.mTextureArr:
+            for texture in self.texArr:
                 #print "Checking texture ", tmpTex.GetName()
-                if (not tmpTex.IsPlaced()):
-                    if (tmpTex.GetLongestEdge() > longestEdge):
-                        mostArea = tmpTex.GetArea()
-                        longestEdge = tmpTex.GetLongestEdge()
+                if (not texture.placed):
+                    if (texture.longestEdge > longestEdge):
+                        mostArea = texture.area
+                        longestEdge = texture.longestEdge
                         index = j
-                    elif (tmpTex.GetLongestEdge() == longestEdge):
-                        if (tmpTex.GetArea() > mostArea):
-                            mostArea = tmpTex.GetArea()
+                    elif (texture.longestEdge == longestEdge):
+                        if (texture.area > mostArea):
+                            mostArea = texture.area
                             index = j
                 j += 1
 
-            # For the texture with the longest edge we place it according to this criteria.
+            # For the texture with the longest edge we place_texture it according to this criteria.
             #   (1) If it is a perfect match, we always accept it as it causes the least amount of fragmentation.
             #   (2) A match of one edge with the minimum area left over after the split.
             #   (3) No edges match, so look for the node which leaves the least amount of area left over after the split.
-            tex = self.mTextureArr[index]
-            #print "Going to try and place ", tex.GetName()
+            tex = self.texArr[index]
+            #print "Going to try and place_texture ", tex.GetName()
 
             leastY = 0x7FFFFFFF
             leastX = 0x7FFFFFFF
@@ -149,12 +136,12 @@ class TexturePacker:
 
             # Walk the singly linked list of free nodes
             # see if it will fit into any currently free space
-            for currNode in self.mFreeArr:
-                resultFitsArr = currNode.Fits(tex.GetRect().GetWidth(), tex.GetRect().GetHeight())
-                ec = resultFitsArr[1]
+            for currNode in self.freeArr:
+                resultdoes_rect_fitArr = currNode.does_rect_fit(tex.get_rect().get_width(), tex.get_rect().get_height())
+                ec = resultdoes_rect_fitArr[1]
 
                 # see if the texture will fit into this slot, and if so how many edges does it share.
-                if (resultFitsArr[0] is True):
+                if (resultdoes_rect_fitArr[0] is True):
                     if (ec == 2):
                         previousBestFitNodeIdx = previousNodeIdx
                         bestFitNode = currNode
@@ -162,15 +149,15 @@ class TexturePacker:
                         edgeCount = ec
                         break
 
-                    if (currNode.GetY() < leastY):
-                        leastY = currNode.GetY()
-                        leastX = currNode.GetX()
+                    if (currNode.y < leastY):
+                        leastY = currNode.y
+                        leastX = currNode.x
                         previousBestFitNodeIdx = previousNodeIdx
                         bestFitNode = currNode
                         nodeIndex = idx
                         edgeCount = ec
-                    elif (currNode.GetY() == leastY and currNode.GetX() < leastX):
-                        leastX = currNode.GetX()
+                    elif (currNode.y == leastY and currNode.x < leastX):
+                        leastX = currNode.x
                         previousBestFitNodeIdx = previousNodeIdx
                         bestFitNode = currNode
                         nodeIndex = idx
@@ -180,95 +167,93 @@ class TexturePacker:
                 idx += 1
 
             # we should always find a fit location!
-            if(bestFitNode.GetX() == 0 and bestFitNode.GetY() == 0 and bestFitNode.GetRect().GetWidth() == 0 and bestFitNode.GetRect().GetHeight() == 0):
-                print "TexturePacker::PackTextures() BestFit node not found!!"
+            if(bestFitNode.x == 0 and bestFitNode.y == 0 and bestFitNode.get_rect().get_width() == 0 and bestFitNode.get_rect().get_height() == 0):
+                print "TexturePacker::pack_textures() BestFit node not found!!"
                 exit(1)
 
-            self.Validate()
+            self.validate()
 
             if (edgeCount == 0):
-                if (tex.GetLongestEdge() <= bestFitNode.GetRect().GetWidth()):
-                    if (tex.GetHeight() > tex.GetWidth()):
-                        tex.FlipDimensions()
-                        tex.SetFlipped(True)
+                if (tex.longestEdge <= bestFitNode.get_rect().get_width()):
+                    if (tex.height > tex.width):
+                        tex.flip_dimensions()
+                        tex.flipped = True
 
-                    tex.Place(bestFitNode.GetX(), bestFitNode.GetY(), tex.IsFlipped())
+                    tex.place_texture(bestFitNode.x, bestFitNode.y, tex.flipped)
 
-                    self.AddNode(bestFitNode.GetX(), bestFitNode.GetY() + tex.GetHeight(), bestFitNode.GetRect().GetWidth(), bestFitNode.GetRect().GetHeight() - tex.GetHeight())
+                    self.add_node(bestFitNode.x, bestFitNode.y + tex.height, bestFitNode.get_rect().get_width(), bestFitNode.get_rect().get_height() - tex.height)
 
-                    bestFitNode.SetX(bestFitNode.GetX() + tex.GetWidth())
-                    bestFitNode.SetWidth(bestFitNode.GetRect().GetWidth() - tex.GetWidth())
-                    bestFitNode.SetHeight(tex.GetHeight())
-                    self.Validate()
+                    bestFitNode.x += tex.width
+                    bestFitNode.width -= tex.width
+                    bestFitNode.height = tex.height
+                    self.validate()
                 else:
-                    if (tex.GetLongestEdge() <= bestFitNode.GetHeight()):
+                    if (tex.longestEdge <= bestFitNode.height):
                         print("TexturePacker::PackTexture() ERROR - Current textures longest edge is less than the BestFitNodes Height!!!")
                         exit(1)
 
-                    if (tex.GetHeight() < tex.GetWidth()):
-                        tex.FlipDimensions()
-                        tex.SetFlipped(True)
+                    if (tex.height < tex.width):
+                        tex.flip_dimensions()
+                        tex.flipped = True
 
-                    tex.Place(bestFitNode.GetX(), bestFitNode.GetY(), tex.IsFlipped())
-                    self.AddNode(bestFitNode.GetX(), bestFitNode.GetY() + tex.GetHeight(), bestFitNode.GetRect().GetWidth(), bestFitNode.GetRect().GetHeight() - tex.GetHeight())
-                    bestFitNode.SetX(bestFitNode.GetX() + tex.GetWidth())
-                    bestFitNode.SetWidth(bestFitNode.GetWidth() - tex.GetWidth())
-                    bestFitNode.SetHeight(tex.GetHeight())
-                    self.Validate()
-
+                    tex.place_texture(bestFitNode.x, bestFitNode.y, tex.flipped)
+                    self.add_node(bestFitNode.x, bestFitNode.y + tex.height, bestFitNode.get_rect().width, bestFitNode.get_rect().height - tex.height)
+                    bestFitNode.x += tex.width
+                    bestFitNode.width -= tex.width
+                    bestFitNode.height = tex.height
+                    self.validate()
             elif(edgeCount == 1):
-                if (tex.GetWidth() == bestFitNode.GetRect().GetWidth()):
-                    tex.Place(bestFitNode.GetX(), bestFitNode.GetY(), False)
-                    bestFitNode.SetY(bestFitNode.GetY() + tex.GetHeight())
-                    bestFitNode.SetHeight(bestFitNode.GetRect().GetHeight() - tex.GetHeight())
-                    self.Validate()
-                elif (tex.mHeight == bestFitNode.GetRect().GetHeight()):
-                    tex.Place(bestFitNode.GetX(), bestFitNode.GetY(), False)
-                    bestFitNode.SetX(bestFitNode.GetX() + tex.GetWidth())
-                    bestFitNode.SetWidth(bestFitNode.GetRect().GetWidth() - tex.GetWidth())
-                    self.Validate()
-                elif (tex.mWidth == bestFitNode.GetRect().GetHeight()):
-                    tex.Place(bestFitNode.GetX(), bestFitNode.GetY(), True)
-                    bestFitNode.SetX(bestFitNode.GetX() + tex.GetHeight())
-                    bestFitNode.SetWidth(bestFitNode.GetRect().GetWidth() - tex.GetHeight())
-                    self.Validate()
-                elif (tex.mHeight == bestFitNode.GetRect().GetWidth()):
-                    tex.Place(bestFitNode.GetX(), bestFitNode.GetY(), True)
-                    bestFitNode.SetY(bestFitNode.GetY() + tex.GetWidth())
-                    bestFitNode.SetHeight(bestFitNode.GetHeight() - tex.GetWidth())
-                    self.Validate()
-
+                if (tex.width == bestFitNode.get_rect().get_width()):
+                    tex.place_texture(bestFitNode.x, bestFitNode.y, False)
+                    bestFitNode.y += tex.height
+                    bestFitNode.height -= tex.height
+                    self.validate()
+                elif (tex.height == bestFitNode.get_rect().get_height()):
+                    tex.place_texture(bestFitNode.x, bestFitNode.y, False)
+                    bestFitNode.x += tex.width
+                    bestFitNode.width -= tex.width
+                    self.validate()
+                elif (tex.width == bestFitNode.get_rect().get_height()):
+                    tex.place_texture(bestFitNode.x, bestFitNode.y, True)
+                    bestFitNode.x += tex.height
+                    bestFitNode.width -= tex.height
+                    self.validate()
+                elif (tex.height == bestFitNode.get_rect().get_width()):
+                    tex.place_texture(bestFitNode.x, bestFitNode.y, True)
+                    bestFitNode.y += tex.width
+                    bestFitNode.height -= tex.width
+                    self.validate()
             elif(edgeCount == 2):
-                flipped = tex.GetWidth() != bestFitNode.GetRect().GetWidth() or tex.GetHeight() != bestFitNode.GetRect().GetHeight()
-                tex.Place(bestFitNode.GetX(), bestFitNode.GetY(), flipped)
+                flipped = tex.width != bestFitNode.get_rect().get_width() or tex.height != bestFitNode.get_rect().get_height()
+                tex.place_texture(bestFitNode.x, bestFitNode.y, flipped)
                 if (previousBestFitNodeIdx >= 0):
                     previousBestFitNodeIdx = index
-                self.Validate()
+                self.validate()
 
             # Save latest version of texture and Node back into lists since python is pass by value
-            self.mFreeArr[nodeIndex] = bestFitNode
-            self.mTextureArr[index] = tex
+            self.freeArr[nodeIndex] = bestFitNode
+            self.texArr[index] = tex
 
             loopI += 1
 
-        while (self.MergeNodes()):
+        while (self.merge_nodes()):
             print "Merging nodes"
 
         index = 0
         height = 0
-        for t in self.mTextureArr:
+        for t in self.texArr:
             if (onePixelBorder):
-                t.SetWidth(t.GetWidth() - 2)
-                t.SetHeight(t.GetHeight() - 2)
-                t.SetX(t.GetX() + 1)
-                t.SetY(t.GetY() + 1)
-                self.mTextureArr[index] = t
+                t.width -= 2
+                t.height -= 2
+                t.x += 1
+                t.y += 1
+                self.texArr[index] = t
 
             y = 0
-            if (t.IsFlipped()):
-                y = t.GetY() + t.GetWidth()
+            if (t.flipped):
+                y = t.y + t.width
             else:
-                y = t.GetY() + t.GetHeight()
+                y = t.y + t.height
 
             if (y > height):
                 height = y
@@ -276,9 +261,9 @@ class TexturePacker:
             index += 1
 
         if (forcePowerOfTwo):
-            height = self.GetNextPowerOfTwo(height)
+            height = next_power_of_two(height)
 
         returnList.append(width)
         returnList.append(height)
-        returnList.append((width * height) - self.mTotalArea)
+        returnList.append((width * height) - self.totalArea)
         return (returnList)
