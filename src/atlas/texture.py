@@ -26,5 +26,17 @@ class Texture:
             self.width = self.height
             self.height = tmp
 
+    def to_dict(self):
+        tex_dict = {}
+        tex_dict['width'] = self.width
+        tex_dict['height'] = self.height
+        tex_dict['x'] = self.x
+        tex_dict['y'] = self.y
+        tex_dict['area'] = self.area
+        tex_dict['flipped'] = self.flipped
+        tex_dict['placed'] = self.placed
+        tex_dict['longestEdge'] = self.longestEdge
+        tex_dict['name'] = self.name
+
     def get_rect(self):
         return Rect(self.x, self.y, self.x + self.width, self.y + self.height)

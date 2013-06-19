@@ -1,5 +1,5 @@
 from util.node import Node
-from util.texture import Texture
+from atlas.texture import Texture
 from math.math import next_power_of_two
 
 
