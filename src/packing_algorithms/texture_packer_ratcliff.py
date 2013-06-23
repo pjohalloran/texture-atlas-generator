@@ -1,3 +1,9 @@
+#
+# This packing algorithm is a python
+# implementation of the C TexturePacker algorithm
+# (c) 2009 by John W. Ratcliff.
+#
+
 from util.node import Node
 from atlas.texture import Texture
 from math.math import next_power_of_two

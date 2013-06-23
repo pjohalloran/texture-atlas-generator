@@ -1,12 +1,15 @@
 class AtlasData:
-    texture_dict = {}
+    texture_dict = None
     border = 1
     width = 0
     height = 0
     color_mode = ""
     file_type = ""
+    name = ""
 
-    def __init__(self, width=512, height=512, border=1, color_mode="RGBA", file_type="TGA"):
+    def __init__(self, name, width=512, height=512, border=1, color_mode="RGBA", file_type="tga"):
+        self.texture_dict = {}
+        self.name = name
         self.border = border
         self.width = width
         self.height = height

@@ -3,13 +3,15 @@ class ParserError(Exception):
 
 
 class Parser:
-    atlas_data = None
     parser_output = None
 
-    def __init__(self, atlasData):
-        self.atlasData = atlasData
+    def __init__(self):
+        pass
 
-    def parse(self):
+    def get_file_ext(self):
+        raise NotImplementedError('Parser::get_file_ext() not implemented')
+
+    def parse(self, atlas_data):
         raise NotImplementedError('Parser::parse() not implemented')
 
     def is_ready_to_save(self):
