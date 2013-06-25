@@ -30,30 +30,19 @@
 # ###################################################
 
 import os.path
-import shutil
 import argparse
 
 from PIL import Image
 
 from packing_algorithms.texture_packer_ratcliff import TexturePacker
-from data_parsers.xml_parser import XmlParser
-from data_parsers.json_parser import JsonParser
-from data_parsers.parser import ParserError
 from atlas.atlas_data import AtlasData
-
-
-def get_parser(parser_type):
-    if parser_type == 'xml':
-        return XmlParser()
-    elif parser_type == 'json':
-        return JsonParser()
-    else:
-        raise ParserError('Unknown parser_type encountered %s' % parser_type)
+from util.utils import get_parser
+from util.utils import get_atlas_path
+from util.utils import clear_atlas_dir
 
 
 def create_atlas(texMode, dirPath, atlasPath, dirName, args):
     texture_packer = TexturePacker()
-    texture_packer.reset()
     parser = get_parser(args['output_data_type'])
     childDirs = os.listdir(dirPath)
 
@@ -123,16 +112,6 @@ def parse_args():
     return {'parser': arg_parser, 'args': args}
 
 
-def get_atlas_path(resource_path):
-    return os.path.join(resource_path, 'atlases')
-
-
-def clear_atlas_dir(directory):
-    if(os.path.isdir(directory)):
-        shutil.rmtree(directory)
-    os.mkdir(directory)
-
-
 def main():
     parser_dict = parse_args()
 
@@ -152,7 +131,6 @@ def main():
     clear_atlas_dir(atlasesPath)
 
     res = iterate_data_directory(parser_dict['args']['atlas_mode'], atlasesPath, textures_dir, parser_dict['args'])
-
     return res
 
 
