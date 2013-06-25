@@ -88,7 +88,7 @@ def create_atlas(texMode, dirPath, atlasPath, dirName, args):
         atlas_data.add_texture(tex)
 
     parser.parse(atlas_data)
-    parser.save('%s.%s' % (dirName, parser.get_file_ext()))
+    parser.save('%s.%s' % (os.path.join(atlasPath, os.path.basename(dirPath)), parser.get_file_ext()))
 
     atlas_image = Image.new(texMode, (packResult[0], packResult[1]), (128, 128, 128))
 
