@@ -42,10 +42,6 @@ from data_parsers.parser import ParserError
 from atlas.atlas_data import AtlasData
 
 
-# Location in resources where textures are grouped.
-gImagesDir = "textures/"
-
-
 def get_parser(parser_type):
     if parser_type == 'xml':
         return XmlParser()
@@ -120,6 +116,7 @@ def parse_args():
     arg_parser.add_argument('-t', '--atlas-type', action='store', required=False, default='tga', choices=('tga', 'png', 'jpg', 'jpeg'), help='The file type of the texture atlases')
     arg_parser.add_argument('-m', '--atlas-mode', action='store', required=False, default='RGBA', choices=('RGB', 'RGBA'), help='The bit mode of the texture atlases')
     arg_parser.add_argument('-o', '--output-data-type', action='store', required=False, default='xml', choices=('xml', 'json'), help='The file output type of the atlas dictionary')
+    arg_parser.add_argument('-i', '--images-dir', action='store', required=False, default='textures', help='The directory inside the resource path to search for images to batch into texture atlases.')
 
     args = vars(arg_parser.parse_args())
 
@@ -137,8 +134,6 @@ def clear_atlas_dir(directory):
 
 
 def main():
-    global gImagesDir
-
     parser_dict = parse_args()
 
     if (not os.path.isdir(parser_dict['args']['res_path'])):
@@ -146,10 +141,10 @@ def main():
         parser_dict['parser'].print_help()
         return 1
 
-    textures_dir = os.path.join(parser_dict['args']['res_path'], gImagesDir)
+    textures_dir = os.path.join(parser_dict['args']['res_path'], parser_dict['args']['images_dir'])
 
     if (not os.path.isdir(textures_dir)):
-        print parser_dict['args']['res_path'], "does not contain a images or textures directory named", gImagesDir
+        print parser_dict['args']['res_path'], "does not contain a images or textures directory named", parser_dict['args']['images_dir']
         parser_dict['parser'].print_help()
         return 1
 
