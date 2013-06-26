@@ -4,59 +4,30 @@
 # (c) 2009 by John W. Ratcliff.
 #
 
-from util.node import Node
-from atlas.texture import Texture
+from packing_algorithms.ratcliff.node import Node
 from math.math import next_power_of_two
+from packing_algorithms.texture_packer import TexturePacker
 
 
-class TexturePacker:
+class TexturePackerRatcliff(TexturePacker):
+    freeArr = None
+    longestEdge = 0
+    totalArea = 0
+
     def __init__(self):
-        self.reset()
-
-    def reset(self):
-        self.texArr = []
+        TexturePacker.__init__(self)
         self.freeArr = []
         self.longestEdge = 0
         self.totalArea = 0
 
-    def get_texture_count(self):
-        return len(self.texArr)
-
     def add_texture(self, width, height, name=""):
-        self.texArr.append(Texture(width, height, name))
+        TexturePacker.add_texture(self, width, height, name)
         self.longestEdge = width if (width > self.longestEdge) else self.longestEdge
         self.longestEdge = height if (height > self.longestEdge) else self.longestEdge
         self.totalArea += width * height
 
     def add_node(self, x, y, width, height):
         self.freeArr.append(Node(x, y, width, height))
-
-    def get_texture_by_name(self, name=""):
-        if (len(name) == 0):
-            return None
-
-        index = 0
-        tex = None
-        for t in self.texArr:
-            if (t.name == name):
-                tex = t
-                if (tex.flipped):
-                    tex.flip_dimensions()
-                return tex
-            index += 1
-
-        return tex
-
-    def get_texture(self, index):
-        if (index < 0 or index >= len(self.texArr)):
-            return None
-
-        tex = self.texArr[index]
-        if (tex.flipped):
-            tex.flip_dimensions()
-            return True
-
-        return False
 
     def merge_nodes(self):
         for f in self.freeArr:
@@ -102,7 +73,7 @@ class TexturePacker:
 
         # We must place_texture each texture
         loopI = 0
-        while (loopI < len(self.texArr)):
+        while (loopI < self.get_texture_count()):
             index = 0
             longestEdge = 0
             mostArea = 0

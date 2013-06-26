@@ -1,0 +1,30 @@
+from atlas.texture import Texture
+
+
+class TexturePacker:
+    texArr = None
+
+    def __init__(self):
+        self.texArr = []
+
+    def add_texture(self, width, height, name):
+        self.texArr.append(Texture(width, height, name))
+
+    def get_texture(self, name):
+        index = 0
+        tex = None
+        for t in self.texArr:
+            if (t.name == name):
+                tex = t
+                if (tex.flipped):
+                    tex.flip_dimensions()
+                return tex
+            index += 1
+
+        return None
+
+    def get_texture_count(self):
+        return len(self.texArr)
+
+    def pack_textures(self, powerOfTwo, oneBorderPixel):
+        raise NotImplementedError('pack_textures() has not been implemented')
