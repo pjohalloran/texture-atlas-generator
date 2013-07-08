@@ -5,6 +5,7 @@ from data_parsers.json_parser import JsonParser
 from data_parsers.xml_parser import XmlParser
 from data_parsers.parser import ParserError
 from packing_algorithms.ratcliff.texture_packer_ratcliff import TexturePackerRatcliff
+from packing_algorithms.maxrects.texture_packer_maxrects import TexturePackerMaxRects
 
 
 def get_parser(parser_type):
@@ -19,6 +20,8 @@ def get_parser(parser_type):
 def get_packer(algorithm_type):
     if algorithm_type == 'ratcliff':
         return TexturePackerRatcliff()
+    elif algorithm_type == 'maxrects':
+        return TexturePackerMaxRects()
     else:
         raise NotImplementedError('%s is unknown or not implemented yet.' % (algorithm_type))
 
