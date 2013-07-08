@@ -34,15 +34,15 @@ import argparse
 
 from PIL import Image
 
-from packing_algorithms.ratcliff.texture_packer_ratcliff import TexturePackerRatcliff
 from atlas.atlas_data import AtlasData
 from util.utils import get_parser
+from util.utils import get_packer
 from util.utils import get_atlas_path
 from util.utils import clear_atlas_dir
 
 
 def create_atlas(texMode, dirPath, atlasPath, dirName, args):
-    texture_packer = TexturePackerRatcliff()
+    texture_packer = get_packer(args['packing_algorithm'])
     parser = get_parser(args['output_data_type'])
     childDirs = os.listdir(dirPath)
 
@@ -110,6 +110,7 @@ def parse_args():
     arg_parser.add_argument('-o', '--output-data-type', action='store', required=False, default='xml', choices=('xml', 'json'), help='The file output type of the atlas dictionary')
     arg_parser.add_argument('-i', '--images-dir', action='store', required=False, default='textures', help='The directory inside the resource path to search for images to batch into texture atlases.')
     arg_parser.add_argument('-c', '--bg-color', action='store', required=False, default='128,128,128,255', help='The background color of the unused area in the texture atlas (e.g. 255,255,255,255).')
+    arg_parser.add_argument('-a', '--packing-algorithm', action='store', required=False, default='ratcliff', choices=('ratcliff', 'maxrects'), help='The packing algorithm to use.')
 
     args = vars(arg_parser.parse_args())
 
