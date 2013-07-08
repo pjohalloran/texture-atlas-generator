@@ -11,7 +11,6 @@ class TexturePacker:
         self.texArr.append(Texture(width, height, name))
 
     def get_texture(self, name):
-        index = 0
         tex = None
         for t in self.texArr:
             if (t.name == name):
@@ -19,8 +18,6 @@ class TexturePacker:
                 if (tex.flipped):
                     tex.flip_dimensions()
                 return tex
-            index += 1
-
         return None
 
     def get_texture_count(self):
