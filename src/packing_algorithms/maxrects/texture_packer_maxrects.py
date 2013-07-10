@@ -103,30 +103,28 @@ class TexturePackerMaxRects(TexturePacker):
         while i < count:
             if (self._split_free_node(self.free_rect_list[i], rect)):
                 self.free_rect_list.pop(i)
-                --i
-                --count
-            ++i
+                i -= 1
+                count -= 1
+            i += 1
 
         self._prune_free_list()
         self.used_rect_list.append(rect)
 
     def _prune_free_list(self):
-        count = len(self.free_rect_list)
-
         # Go through each pair and remove any rectangle that is redundant.
         i = 0
-        while i < count:
+        while i < len(self.free_rect_list):
             j = i + 1
-            while j < count:
+            while j < len(self.free_rect_list):
                 if self.free_rect_list[i].contains(self.free_rect_list[j]):
                     self.free_rect_list.pop(i)
-                    --i
+                    i -= 1
                     break
                 if self.free_rect_list[j].contains(self.free_rect_list[i]):
                     self.free_rect_list.pop(j)
-                    --j
-                ++j
-            ++i
+                    j -= 1
+                j += 1
+            i += 1
 
     def _contact_point_score_node(self, x, y, width, height):
         score = 0
