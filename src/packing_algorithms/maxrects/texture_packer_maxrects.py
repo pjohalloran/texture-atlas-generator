@@ -174,16 +174,137 @@ class TexturePackerMaxRects(TexturePacker):
         return True
 
     def _find_position_for_new_node_bottom_left(self, width, height):
-        raise NotImplementedError('_find_position_for_new_node_bottom_left() has not been implemented')
+        bestRect = None
+        bestX = sys.maxint
+        bestY = sys.maxint
+
+        for rect in self.free_rect_list:
+            # Try to place the rectangle in upright (non-flipped) orientation.
+            if rect.get_width() >= width and rect.get_height() >= height:
+                topSideY = rect.y1 + height
+                if topSideY < bestY and (topSideY == bestY and rect.x1 < bestX):
+                    bestRect = Rect.InitWithDim(rect.x1, rect.y1, width, height)
+                    bestY = topSideY
+                    bestX = rect.x1
+
+            if rect.get_width() >= height and rect.get_height() >= width:
+                topSideY = rect.y1 + width
+                if topSideY < bestY or (topSideY == bestY and rect.x1 < bestX):
+                    bestRect = Rect.InitWithDim(rect.x1, rect.y1, height, width)
+                    bestY = topSideY
+                    bestX = rect.x1
+
+        return (bestRect, bestX, bestY)
 
     def _find_position_for_new_node_best_short_side_fit(self, width, height):
-        raise NotImplementedError('_find_position_for_new_node_best_short_side_fit() has not been implemented')
+        bestNode = None
+        bestShortSideFit = sys.maxint
+        bestLongSideFit = sys.maxint
+
+        for rect in self.free_rect_list:
+            # Try to place the rectangle in upright (non-flipped) orientation.
+            if rect.get_width() >= width and rect.get_height() >= height:
+                leftoverHoriz = abs(rect.get_width() - width)
+                leftoverVert = abs(rect.get_height() - height)
+                shortSideFit = min(leftoverHoriz, leftoverVert)
+                longSideFit = max(leftoverHoriz, leftoverVert)
+
+                if shortSideFit < bestShortSideFit or (shortSideFit == bestShortSideFit and longSideFit < bestLongSideFit):
+                    bestNode = Rect.InitWithDim(rect.x1, rect.y1, width, height)
+                    bestShortSideFit = shortSideFit
+                    bestLongSideFit = longSideFit
+
+            if rect.get_width() >= height and rect.get_height() >= width:
+                flippedLeftoverHoriz = abs(rect.get_width() - height)
+                flippedLeftoverVert = abs(rect.get_height() - width)
+                flippedShortSideFit = min(flippedLeftoverHoriz, flippedLeftoverVert)
+                flippedLongSideFit = max(flippedLeftoverHoriz, flippedLeftoverVert)
+
+                if flippedShortSideFit < bestShortSideFit or (flippedShortSideFit == bestShortSideFit and flippedLongSideFit < bestLongSideFit):
+                    bestNode = Rect.InitWithDim(rect.x1, rect.y1, height, width)
+                    bestShortSideFit = flippedShortSideFit
+                    bestLongSideFit = flippedLongSideFit
+
+        return (bestNode, bestShortSideFit, bestLongSideFit)
 
     def _find_position_for_new_node_best_long_side_fit(self, width, height):
-        raise NotImplementedError('_find_position_for_new_node_best_long_side_fit() has not been implemented')
+        bestNode = None
+        bestLongSideFit = sys.maxint
+        bestShortSideFit = sys.maxint
+
+        for rect in self.free_rect_list:
+            # Try to place the rectangle in upright (non-flipped) orientation.
+            if rect.get_width() >= width and rect.get_height() >= height:
+                leftoverHoriz = abs(rect.get_width() - width)
+                leftoverVert = abs(rect.get_height() - height)
+                shortSideFit = min(leftoverHoriz, leftoverVert)
+                longSideFit = max(leftoverHoriz, leftoverVert)
+
+                if longSideFit < bestLongSideFit or (longSideFit == bestLongSideFit and shortSideFit < bestShortSideFit):
+                    bestNode = Rect.InitWithDim(rect.x1, rect.y1, width, height)
+                    bestShortSideFit = shortSideFit
+                    bestLongSideFit = longSideFit
+
+            if rect.get_width() >= height and rect.get_height() >= width:
+                leftoverHoriz = abs(rect.get_width() - height)
+                leftoverVert = abs(rect.get_height() - width)
+                shortSideFit = min(leftoverHoriz, leftoverVert)
+                longSideFit = max(leftoverHoriz, leftoverVert)
+
+                if longSideFit < bestLongSideFit or (longSideFit == bestLongSideFit and shortSideFit < bestShortSideFit):
+                    bestNode = Rect.InitWithDim(rect.x1, rect.y1, height, width)
+                    bestShortSideFit = shortSideFit
+                    bestLongSideFit = longSideFit
+
+        return (bestNode, bestShortSideFit, bestLongSideFit)
 
     def _find_position_for_new_node_best_area_fit(self, width, height):
-        raise NotImplementedError('_find_position_for_new_node_best_area_fit() has not been implemented')
+        bestNode = None
+        bestAreaFit = sys.maxint
+        bestShortSideFit = sys.maxint
+
+        for rect in self.free_rect_list:
+            areaFit = rect.get_area() - (width * height)
+
+            # Try to place the rectangle in upright (non-flipped) orientation.
+            if rect.get_width() >= width and rect.get_height() >= height:
+                leftoverHoriz = abs(rect.get_width() - width)
+                leftoverVert = abs(rect.get_height() - height)
+                shortSideFit = min(leftoverHoriz, leftoverVert)
+
+                if areaFit < bestAreaFit or (areaFit == bestAreaFit and shortSideFit < bestShortSideFit):
+                    bestNode = Rect.InitWithDim(rect.x1, rect.y1, width, height)
+                    bestShortSideFit = shortSideFit
+                    bestAreaFit = areaFit
+
+            if rect.get_width() >= height and rect.get_height() >= width:
+                leftoverHoriz = abs(rect.get_width() - height)
+                leftoverVert = abs(rect.get_height() - width)
+                shortSideFit = min(leftoverHoriz, leftoverVert)
+
+                if areaFit < bestAreaFit or (areaFit == bestAreaFit and shortSideFit < bestShortSideFit):
+                    bestNode = Rect.InitWithDim(rect.x1, rect.y1, height, width)
+                    bestShortSideFit = shortSideFit
+                    bestAreaFit = areaFit
+
+        return (bestNode, bestAreaFit, bestShortSideFit)
 
     def _find_position_for_new_node_contact_point(self, width, height):
-        raise NotImplementedError('_find_position_for_new_node_contact_point() has not been implemented')
+        bestNode = None
+        bestContactScore = -1
+
+        for rect in self.free_rect_list:
+            # Try to place the rectangle in upright (non-flipped) orientation.
+            if (rect.get_width() >= width and rect.get_height() >= height):
+                score = self._contact_point_score_node(rect.x1, rect.y1, width, height)
+                if score > bestContactScore:
+                    bestNode = Rect.InitWithDim(rect.x1, rect.y1, width, height)
+                    bestContactScore = score
+
+            if (rect.get_width() >= height and rect.get_height() >= width):
+                score = self._contact_point_score_node(rect.x1, rect.y1, height, width)
+                if score > bestContactScore:
+                    bestNode = Rect.InitWithDim(rect.x1, rect.y1, height, width)
+                    bestContactScore = score
+
+        return (bestNode, bestContactScore)
