@@ -26,4 +26,4 @@ class Rect:
         return self.y2 - self.y1
 
     def get_area(self):
-        return self.width * self.height
+        return self.get_width() * self.get_height()
