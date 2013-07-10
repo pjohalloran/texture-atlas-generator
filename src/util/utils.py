@@ -18,12 +18,26 @@ def get_parser(parser_type):
         raise ParserError('Unknown parser_type encountered %s' % parser_type)
 
 
-def get_packer(algorithm_type):
+def get_maxrects_heuristic(heuristic):
+    if heuristic == 'shortside':
+        return FreeRectChoiceHeuristicEnum.RectBestShortSideFit
+    elif heuristic == 'longside':
+        return FreeRectChoiceHeuristicEnum.RectBestLongSideFit
+    elif heuristic == 'area':
+        return FreeRectChoiceHeuristicEnum.RectBestAreaFit
+    elif heuristic == 'bottomleft':
+        return FreeRectChoiceHeuristicEnum.RectBottomLeftRule
+    elif heuristic == 'contactpoint':
+        return FreeRectChoiceHeuristicEnum.RectContactPointRule
+    else:
+        raise NotImplementedError('Unknown heuristic enum encountered')
+
+
+def get_packer(algorithm_type, size=0, heuristic=""):
     if algorithm_type == 'ratcliff':
         return TexturePackerRatcliff()
     elif algorithm_type == 'maxrects':
-        # TODO: Make heuristic method for maxrects configurable.
-        return TexturePackerMaxRects(FreeRectChoiceHeuristicEnum.RectBestShortSideFit)
+        return TexturePackerMaxRects(get_maxrects_heuristic(heuristic), int(size), int(size))
     else:
         raise NotImplementedError('%s is unknown or not implemented yet.' % (algorithm_type))
 

@@ -42,7 +42,7 @@ from util.utils import clear_atlas_dir
 
 
 def create_atlas(texMode, dirPath, atlasPath, dirName, args):
-    texture_packer = get_packer(args['packing_algorithm'])
+    texture_packer = get_packer(args['packing_algorithm'], args['maxrects_bin_size'], args['maxrects_heuristic'])
     parser = get_parser(args['output_data_type'])
     childDirs = os.listdir(dirPath)
 
@@ -111,6 +111,8 @@ def parse_args():
     arg_parser.add_argument('-i', '--images-dir', action='store', required=False, default='textures', help='The directory inside the resource path to search for images to batch into texture atlases.')
     arg_parser.add_argument('-c', '--bg-color', action='store', required=False, default='128,128,128,255', help='The background color of the unused area in the texture atlas (e.g. 255,255,255,255).')
     arg_parser.add_argument('-a', '--packing-algorithm', action='store', required=False, default='ratcliff', choices=('ratcliff', 'maxrects'), help='The packing algorithm to use.')
+    arg_parser.add_argument('-e', '--maxrects-heuristic', action='store', required=False, default='shortside', choices=('shortside', 'longside', 'area', 'bottomleft', 'contactpoint'), help='The packing heuristic/rule to use if the maxrects algorithm is selected.')
+    arg_parser.add_argument('-s', '--maxrects-bin-size', action='store', required=False, default='1024', help='The size of atlas when using the maxrects algorithm.')
 
     args = vars(arg_parser.parse_args())
 
