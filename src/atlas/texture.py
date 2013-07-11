@@ -18,13 +18,22 @@ class Texture:
         self.y = y
         self.flipped = flipped
         self.placed = True
-        print "Placing ", self.name, "at ", self.x, self.y
 
     def flip_dimensions(self):
         if(self.flipped):
             tmp = self.width
             self.width = self.height
             self.height = tmp
+
+    def to_dict(self):
+        tex_dict = {}
+        tex_dict['width'] = self.width
+        tex_dict['height'] = self.height
+        tex_dict['x'] = self.x
+        tex_dict['y'] = self.y
+        tex_dict['flipped'] = self.flipped
+        tex_dict['name'] = self.name
+        return tex_dict
 
     def get_rect(self):
         return Rect(self.x, self.y, self.x + self.width, self.y + self.height)

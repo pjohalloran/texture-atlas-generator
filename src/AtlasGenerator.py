@@ -8,14 +8,6 @@
 # generates texture atlases and an xml dictionary
 # describing the atlas.
 #
-# Depends on the PIL image library to read in the images
-# and create the atlases and standard python for
-# creating the atlas xml dictionary file.
-#
-# Texture atlas packing algorithm is a python
-# implementation of the C TexturePacker algorithm
-# (c) 2009 by John W. Ratcliff.
-#
 # This script is provided for free under the MIT license:
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -37,112 +29,75 @@
 #
 # ###################################################
 
-from PIL import Image
 import os.path
-import shutil
 import argparse
-import xml.dom.minidom
-from packing_algorithms.texture_packer_ratcliff import TexturePacker
 
+from PIL import Image
 
-# Directory where images are not baked into texture atlases during resource build.
-gNoAtlasDir = "NoAtlas/"
-# Location in resources where textures are grouped.
-gImagesDir = "textures/"
-
-gOutputAtlasXml = "AtlasInfo.xml"
-
-gDoc = xml.dom.minidom.Document()
-gRootElement = gDoc.createElement("Root")
-gDoc.appendChild(gRootElement)
-
-gTexturePacker = TexturePacker()
+from atlas.atlas_data import AtlasData
+from util.utils import get_parser
+from util.utils import get_packer
+from util.utils import get_atlas_path
+from util.utils import clear_atlas_dir
 
 
 def create_atlas(texMode, dirPath, atlasPath, dirName, args):
-    # 4 xml file to be read in at runtime which holds the texture coordinates, etc. in the atlas for each image stored in the atlas.
-    print texMode, dirPath, atlasPath
-
+    texture_packer = get_packer(args['packing_algorithm'], args['maxrects_bin_size'], args['maxrects_heuristic'])
+    parser = get_parser(args['output_data_type'])
     childDirs = os.listdir(dirPath)
 
     index = 0
-    imgNameList = []
-    imagesPathList = []
     imagesList = []
 
-    # Open all images in the directory and add to the packer.
+    # Open all images in the directory and add to the packer input data structure.
     for currPath in childDirs:
-        #print "Doing ", currPath, os.path.isdir(currPath)
-        imgElement = gDoc.createElement("image")
-        imgElement.setAttribute("imagefile", currPath)
-
-        if (currPath.startswith(".") or os.path.isdir(os.path.join(dirPath, currPath))):
+        file_path = os.path.join(dirPath, currPath)
+        if (currPath.startswith(".") or os.path.isdir(file_path)):
             continue
 
         try:
-            imgNameList.append(currPath)
-            imagesPathList.append(dirPath + "/" + currPath)
-            img = Image.open(imagesPathList[len(imagesPathList)-1])
-            gTexturePacker.add_texture(img.size[0], img.size[1], currPath)
-            imagesList.append([img, imgElement])
+            img = Image.open(file_path)
+            texture_packer.add_texture(img.size[0], img.size[1], currPath)
+            imagesList.append((currPath, img))
             index += 1
         except (IOError):
-            print "ERROR: PIL failed to open file", dirPath + currPath
+            print "ERROR: PIL failed to open file: ", file_path
 
     # Pack the textures into an atlas as efficiently as possible.
-    packResult = gTexturePacker.pack_textures(True, True)
+    packResult = texture_packer.pack_textures(True, True)
+
     borderSize = 1
+    atlas_name = '%s.%s' % (dirName, args['atlas_type'])
+    atlas_data = AtlasData(name=atlas_name, width=packResult[0], height=packResult[1], color_mode=texMode, file_type=args['atlas_type'], border=borderSize)
+    for tex in texture_packer.texArr:
+        atlas_data.add_texture(tex)
 
-    atlasElement = gDoc.createElement("Atlas")
-    atlasElement.setAttribute("name", ("%s.TGA" % (dirName)))
-    atlasElement.setAttribute("width", str(packResult[0]))
-    atlasElement.setAttribute("height", str(packResult[1]))
-    atlasElement.setAttribute("mode", texMode)
-    atlasElement.setAttribute("border", str(borderSize))
-    atlasElement.setAttribute("type", args['atlas_type'])
+    parser.parse(atlas_data)
+    parser.save('%s.%s' % (os.path.join(atlasPath, os.path.basename(dirPath)), parser.get_file_ext()))
 
-    if (gTexturePacker.get_texture_count() != len(imagesPathList) or gTexturePacker.get_texture_count() != len(imagesList)):
-        print "MakeAtlas(): ERROR - number of textures in Packer is different to number of images in dir", gTexturePacker.get_texture_count(), len(imagesPathList), len(imagesList)
-        exit(1)
-
-    atlasTest = Image.new(texMode, (packResult[0], packResult[1]), (128, 128, 128))
+    # Parse arg & turn it from a list of strings to a list of ints.
+    color_list = args['bg_color'].split(',')
+    color_list = map(int, color_list)
+    atlas_image = Image.new(texMode, (packResult[0], packResult[1]), tuple(color_list[:len(color_list)-1]))
 
     index = 0
     for image in imagesList:
-        img = image[0]
-        imgElement = image[1]
-        tex = gTexturePacker.get_texture_by_name(imgNameList[index])
-
-        atlasTest.paste(img, (tex.x, tex.y))
-
-        imgElement.setAttribute("x", str(tex.x))
-        imgElement.setAttribute("y", str(tex.y))
-        imgElement.setAttribute("width", str(tex.width))
-        imgElement.setAttribute("height", str(tex.height))
-        imgElement.setAttribute("flipped", str(tex.flipped))
-
-        atlasElement.appendChild(imgElement)
-
+        tex = texture_packer.get_texture(image[0])
+        atlas_image.paste(image[1], (tex.x, tex.y))
         index += 1
 
-    atlasTest.save(atlasPath + "/" + os.path.basename(dirPath) + "." + args['atlas_type'], args['atlas_type'])
+    atlas_image.save(os.path.join(atlasPath, os.path.basename(dirPath)) + "." + args['atlas_type'], args['atlas_type'])
     if (args['verbose']):
-        atlasTest.show()
-
-    gRootElement.appendChild(atlasElement)
+        atlas_image.show()
 
 
 def iterate_data_directory(texMode, atlasPath, resPath, args):
-    print texMode, atlasPath, resPath
-
     childDirs = os.listdir(resPath)
-
     for currPath in childDirs:
         if (currPath.startswith(".")):
             continue
         if (os.path.isdir(os.path.join(resPath, currPath))):
-            gTexturePacker.reset()
-            create_atlas(texMode, resPath + "/" + currPath, atlasPath, currPath, args)
+            create_atlas(texMode, os.path.join(resPath, currPath), atlasPath, currPath, args)
 
 
 def parse_args():
@@ -150,27 +105,21 @@ def parse_args():
 
     arg_parser.add_argument('-v', '--verbose', action='store_true')
     arg_parser.add_argument('-r', '--res-path', action='store', required=True, help='The location of the games resources.')
-    arg_parser.add_argument('-t', '--atlas-type', action='store', required=False, default='TGA', help='The file type of the texture atlases')
-    arg_parser.add_argument('-m', '--atlas-mode', action='store', required=False, default='RGBA', help='The bit mode of the texture atlases (RGBA, RGB)')
+    arg_parser.add_argument('-t', '--atlas-type', action='store', required=False, default='tga', choices=('tga', 'png', 'jpg', 'jpeg'), help='The file type of the texture atlases')
+    arg_parser.add_argument('-m', '--atlas-mode', action='store', required=False, default='RGBA', choices=('RGB', 'RGBA'), help='The bit mode of the texture atlases')
+    arg_parser.add_argument('-o', '--output-data-type', action='store', required=False, default='xml', choices=('xml', 'json'), help='The file output type of the atlas dictionary')
+    arg_parser.add_argument('-i', '--images-dir', action='store', required=False, default='textures', help='The directory inside the resource path to search for images to batch into texture atlases.')
+    arg_parser.add_argument('-c', '--bg-color', action='store', required=False, default='128,128,128,255', help='The background color of the unused area in the texture atlas (e.g. 255,255,255,255).')
+    arg_parser.add_argument('-a', '--packing-algorithm', action='store', required=False, default='ratcliff', choices=('ratcliff', 'maxrects'), help='The packing algorithm to use.')
+    arg_parser.add_argument('-e', '--maxrects-heuristic', action='store', required=False, default='shortside', choices=('shortside', 'longside', 'area', 'bottomleft', 'contactpoint'), help='The packing heuristic/rule to use if the maxrects algorithm is selected.')
+    arg_parser.add_argument('-s', '--maxrects-bin-size', action='store', required=False, default='1024', help='The size of atlas when using the maxrects algorithm.')
 
     args = vars(arg_parser.parse_args())
 
     return {'parser': arg_parser, 'args': args}
 
 
-def get_atlas_path(resource_path):
-    return "%s/atlases/" % (resource_path)
-
-
-def clear_atlas_dir(directory):
-    if(os.path.isdir(directory)):
-        shutil.rmtree(directory)
-    os.mkdir(directory)
-
-
 def main():
-    global gImagesDir
-
     parser_dict = parse_args()
 
     if (not os.path.isdir(parser_dict['args']['res_path'])):
@@ -178,19 +127,17 @@ def main():
         parser_dict['parser'].print_help()
         return 1
 
-    if (not os.path.isdir(parser_dict['args']['res_path'] + "/" + gImagesDir)):
-        print parser_dict['args']['res_path'], "does not contain a images or textures directory named", gImagesDir
+    textures_dir = os.path.join(parser_dict['args']['res_path'], parser_dict['args']['images_dir'])
+
+    if (not os.path.isdir(textures_dir)):
+        print parser_dict['args']['res_path'], "does not contain a images or textures directory named", parser_dict['args']['images_dir']
         parser_dict['parser'].print_help()
         return 1
 
     atlasesPath = get_atlas_path(parser_dict['args']['res_path'])
     clear_atlas_dir(atlasesPath)
 
-    res = iterate_data_directory(parser_dict['args']['atlas_mode'], atlasesPath, parser_dict['args']['res_path'] + "/" + gImagesDir, parser_dict['args'])
-
-    file_object = open(atlasesPath + "atlasDictionary.xml", "w")
-    gDoc.writexml(file_object, indent="\n", addindent="    ")
-
+    res = iterate_data_directory(parser_dict['args']['atlas_mode'], atlasesPath, textures_dir, parser_dict['args'])
     return res
 
 
