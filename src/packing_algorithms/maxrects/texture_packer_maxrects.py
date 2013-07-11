@@ -34,6 +34,7 @@ class TexturePackerMaxRects(TexturePacker):
         return float(usedSurfaceArea) / self._get_bin_area()
 
     def add_texture(self, width, height, name):
+        TexturePacker.add_texture(self, width, height, name)
         result = None
 
         if self.heuristic == FreeRectChoiceHeuristicEnum.RectBestShortSideFit:
@@ -56,7 +57,13 @@ class TexturePackerMaxRects(TexturePacker):
         return result[0]
 
     def pack_textures(self, powerOfTwo, oneBorderPixel):
-        raise NotImplementedError('pack_textures() has not been implemented')
+        i = 0
+
+        for rect in self.used_rect_list:
+            self.texArr[i].place_texture(rect.x1, rect.y1)
+            i += 1
+
+        return (self.bin_width, self.bin_height, 0)
 
     def _get_bin_area(self):
         return self.bin_width * self.bin_height
