@@ -46,6 +46,12 @@ def get_atlas_path(resource_path):
     return os.path.join(resource_path, 'atlases')
 
 
+def get_color(color_text):
+    color_list = color_text.split(',')
+    color_list = map(int, color_list)
+    return tuple(color_list[:len(color_list)])
+
+
 def clear_atlas_dir(directory):
     if(os.path.isdir(directory)):
         shutil.rmtree(directory)

@@ -39,6 +39,7 @@ from util.utils import get_parser
 from util.utils import get_packer
 from util.utils import get_atlas_path
 from util.utils import clear_atlas_dir
+from util.utils import get_color
 
 
 def create_atlas(texMode, dirPath, atlasPath, dirName, args):
@@ -75,10 +76,7 @@ def create_atlas(texMode, dirPath, atlasPath, dirName, args):
     parser.parse(atlas_data)
     parser.save('%s.%s' % (os.path.join(atlasPath, os.path.basename(dirPath)), parser.get_file_ext()))
 
-    # Parse arg & turn it from a list of strings to a list of ints.
-    color_list = args['bg_color'].split(',')
-    color_list = map(int, color_list)
-    atlas_image = Image.new(texMode, (packResult[0], packResult[1]), tuple(color_list[:len(color_list)-1]))
+    atlas_image = Image.new(texMode, (packResult[0], packResult[1]), get_color(args['bg_color']))
 
     index = 0
     for image in imagesList:
@@ -110,7 +108,7 @@ def parse_args():
     arg_parser.add_argument('-o', '--output-data-type', action='store', required=False, default='xml', choices=('xml', 'json'), help='The file output type of the atlas dictionary')
     arg_parser.add_argument('-i', '--images-dir', action='store', required=False, default='textures', help='The directory inside the resource path to search for images to batch into texture atlases.')
     arg_parser.add_argument('-c', '--bg-color', action='store', required=False, default='128,128,128,255', help='The background color of the unused area in the texture atlas (e.g. 255,255,255,255).')
-    arg_parser.add_argument('-a', '--packing-algorithm', action='store', required=False, default='ratcliff', choices=('ratcliff', 'maxrects'), help='The packing algorithm to use.')
+    arg_parser.add_argument('-a', '--packing-algorithm', action='store', required=False, default='maxrects', choices=('ratcliff', 'maxrects'), help='The packing algorithm to use.')
     arg_parser.add_argument('-e', '--maxrects-heuristic', action='store', required=False, default='shortside', choices=('shortside', 'longside', 'area', 'bottomleft', 'contactpoint'), help='The packing heuristic/rule to use if the maxrects algorithm is selected.')
     arg_parser.add_argument('-s', '--maxrects-bin-size', action='store', required=False, default='1024', help='The size of atlas when using the maxrects algorithm.')
 
