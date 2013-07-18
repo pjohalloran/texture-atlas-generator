@@ -1,6 +1,7 @@
 import sys
 
 from packing_algorithms.texture_packer import TexturePacker
+from packing_algorithms.texture_packer import PackerError
 from math.rect import Rect
 from math.math import common_interval_length
 
@@ -50,8 +51,17 @@ class TexturePackerMaxRects(TexturePacker):
         else:
             raise NotImplementedError('Unknown MaxRects Heuristic encountered')
 
+        if result[0] is None:
+            raise PackerError('Failed to fit in %s' % (name))
+
         if (result[0].get_height() == 0):
             return result[0]
+
+        if (result[0].y2) > self.bin_height:
+            raise PackerError('Can not fit in vertically %s' % (str(result[0])))
+
+        if (result[0].x2) > self.bin_width:
+            raise PackerError('Can not fit in horizontally %s' % (str(result[0])))
 
         self._place_rect(result[0])
         return result[0]
@@ -192,7 +202,7 @@ class TexturePackerMaxRects(TexturePacker):
                     bestY = topSideY
                     bestX = rect.x1
 
-            if rect.get_width() >= height and rect.get_height() >= width:
+            if self.allow_rotations and rect.get_width() >= height and rect.get_height() >= width:
                 topSideY = rect.y1 + width
                 if topSideY < bestY or (topSideY == bestY and rect.x1 < bestX):
                     bestRect = Rect.InitWithDim(rect.x1, rect.y1, height, width)
@@ -219,7 +229,7 @@ class TexturePackerMaxRects(TexturePacker):
                     bestShortSideFit = shortSideFit
                     bestLongSideFit = longSideFit
 
-            if rect.get_width() >= height and rect.get_height() >= width:
+            if self.allow_rotations and rect.get_width() >= height and rect.get_height() >= width:
                 flippedLeftoverHoriz = abs(rect.get_width() - height)
                 flippedLeftoverVert = abs(rect.get_height() - width)
                 flippedShortSideFit = min(flippedLeftoverHoriz, flippedLeftoverVert)
@@ -250,7 +260,7 @@ class TexturePackerMaxRects(TexturePacker):
                     bestShortSideFit = shortSideFit
                     bestLongSideFit = longSideFit
 
-            if rect.get_width() >= height and rect.get_height() >= width:
+            if self.allow_rotations and rect.get_width() >= height and rect.get_height() >= width:
                 leftoverHoriz = abs(rect.get_width() - height)
                 leftoverVert = abs(rect.get_height() - width)
                 shortSideFit = min(leftoverHoriz, leftoverVert)
@@ -282,7 +292,7 @@ class TexturePackerMaxRects(TexturePacker):
                     bestShortSideFit = shortSideFit
                     bestAreaFit = areaFit
 
-            if rect.get_width() >= height and rect.get_height() >= width:
+            if self.allow_rotations and rect.get_width() >= height and rect.get_height() >= width:
                 leftoverHoriz = abs(rect.get_width() - height)
                 leftoverVert = abs(rect.get_height() - width)
                 shortSideFit = min(leftoverHoriz, leftoverVert)
@@ -306,7 +316,7 @@ class TexturePackerMaxRects(TexturePacker):
                     bestNode = Rect.InitWithDim(rect.x1, rect.y1, width, height)
                     bestContactScore = score
 
-            if (rect.get_width() >= height and rect.get_height() >= width):
+            if self.allow_rotations and (rect.get_width() >= height and rect.get_height() >= width):
                 score = self._contact_point_score_node(rect.x1, rect.y1, height, width)
                 if score > bestContactScore:
                     bestNode = Rect.InitWithDim(rect.x1, rect.y1, height, width)

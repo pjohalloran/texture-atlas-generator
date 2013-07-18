@@ -1,8 +1,13 @@
 from atlas.texture import Texture
 
 
+class PackerError(Exception):
+    pass
+
+
 class TexturePacker:
     texArr = None
+    allow_rotations = False
 
     def __init__(self):
         self.texArr = []
