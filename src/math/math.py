@@ -6,7 +6,7 @@ def is_power_of_two(number):
 
 def next_power_of_two(number):
     p = 1
-    while (p < number):
+    while (p <= number):
         p *= 2
     return p
 
