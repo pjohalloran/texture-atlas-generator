@@ -40,11 +40,12 @@ from util.utils import get_packer
 from util.utils import get_atlas_path
 from util.utils import clear_atlas_dir
 from util.utils import get_color
+from packing_algorithms.texture_packer import PackerError
+from math.math import next_power_of_two
 
 
-def create_atlas(texMode, dirPath, atlasPath, dirName, args):
-    texture_packer = get_packer(args['packing_algorithm'], args['maxrects_bin_size'], args['maxrects_heuristic'])
-    parser = get_parser(args['output_data_type'])
+def pack_atlas(args, dirPath, curr_size):
+    texture_packer = get_packer(args['packing_algorithm'], curr_size, args['maxrects_heuristic'])
     childDirs = os.listdir(dirPath)
 
     index = 0
@@ -67,12 +68,35 @@ def create_atlas(texMode, dirPath, atlasPath, dirName, args):
     # Pack the textures into an atlas as efficiently as possible.
     packResult = texture_packer.pack_textures(True, True)
 
+    return (texture_packer, packResult, imagesList)
+
+
+def create_atlas(texMode, dirPath, atlasPath, dirName, args):
+    done = False
+    curr_size = int(args['maxrects_bin_size'])
+    texture_packer = None
+    imagesList = None
+    packResult = None
+
+    # Retry until optimal font atlas size is found.
+    while not done:
+        try:
+            result = pack_atlas(args, dirPath, curr_size)
+            texture_packer = result[0]
+            packResult = result[1]
+            imagesList = result[2]
+            done = True
+        except PackerError:
+            curr_size = next_power_of_two(curr_size)
+            print "Failed, trying next power of two", curr_size
+
     borderSize = 1
     atlas_name = '%s.%s' % (dirName, args['atlas_type'])
     atlas_data = AtlasData(name=atlas_name, width=packResult[0], height=packResult[1], color_mode=texMode, file_type=args['atlas_type'], border=borderSize)
     for tex in texture_packer.texArr:
         atlas_data.add_texture(tex)
 
+    parser = get_parser(args['output_data_type'])
     parser.parse(atlas_data)
     parser.save('%s.%s' % (os.path.join(atlasPath, os.path.basename(dirPath)), parser.get_file_ext()))
 
