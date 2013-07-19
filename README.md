@@ -1,12 +1,10 @@
-# Introduction #
+# Texture Atlas & Image Font Generator #
+
+## Introduction ##
 
 Texture Atlas Generator is a pipeline tool for generating texture atlases, atlas data files and image fonts for use in apps and games.  It was written for my own personal game engine but can be used in any game engine that can read xml or json.
 
 It is written in python and uses the python image library to generate the texture atlases.  It can be installed and used on any platform that supports python and the python imaging library.  It is known to work on Windows and OSX.
-
-The atlas packing algorithms include the maxrects algorithm (http://clb.demon.fi/files/RectangleBinPack.pdf) and John Ratcliffs packing algorithm (https://code.google.com/p/texture-atlas/).
-
-The maxrects algorithm implemted here is a python implementation of maxrects from https://github.com/juj/RectangleBinPack.
 
 
 ##  Dependencies ##
@@ -44,6 +42,26 @@ On OSX, i recommend using Brew to manage the install (but macports will work as 
 `cd src`
 `python AtlasGenerator.py --help`
 
+
+## Contributer List ##
+* PJ O Halloran
+
+
+## Help ##
+Contact me on twitter @pjohalloran if you need some help or would like to contribute.
+
+
+## Contribution Guidelines ##
+If you have something to contribute, fork the project, make your change and open a pull request when done.
+The only guidelines I have is that you ensure the code is PEP-8 compliant.
+
+
+## Credits  ##
+
+The atlas packing algorithms include the maxrects algorithm (http://clb.demon.fi/files/RectangleBinPack.pdf) and John Ratcliffs packing algorithm (https://code.google.com/p/texture-atlas/).
+The maxrects algorithm implemted here is a python implementation of maxrects from https://github.com/juj/RectangleBinPack.
+
+If you would like a project with more features then I would recommend you check out the excellent TexturePacker (http://www.codeandweb.com/texturepacker) by Andreas Low.
 
 ## Software License ##
 
