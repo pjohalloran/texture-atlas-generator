@@ -22,14 +22,22 @@ class XmlParser(Parser):
         self.document.appendChild(self.root_element)
 
     def _parse_atlas_data(self, atlas_data):
+        atlas = self.document.createElement('Atlas')
+        atlas.setAttribute('name', atlas_data.name)
+        atlas.setAttribute('mode', atlas_data.color_mode)
+        atlas.setAttribute('type', atlas_data.file_type)
+        atlas.setAttribute('border', str(atlas_data.border))
+        atlas.setAttribute('width', str(atlas_data.width))
+        atlas.setAttribute('height', str(atlas_data.height))
         for key in atlas_data.texture_dict:
-            self._add_element(atlas_data.texture_dict[key].to_dict())
+            self._add_element(atlas, atlas_data.texture_dict[key].to_dict())
+        self.root_element.appendChild(atlas)
 
-    def _add_element(self, attribute_dict):
+    def _add_element(self, atlas_element, attribute_dict):
         element = self.document.createElement('Image')
         for key in attribute_dict.keys():
             element.setAttribute(key, str(attribute_dict[key]))
-        self.root_element.appendChild(element)
+        atlas_element.appendChild(element)
 
     def _clean_up(self):
         self.document.unlink()
