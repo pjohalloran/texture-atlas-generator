@@ -92,7 +92,7 @@ def create_atlas(texMode, dirPath, atlasPath, dirName, args):
 
     borderSize = 1
     atlas_name = '%s.%s' % (dirName, args['atlas_type'])
-    atlas_data = AtlasData(name=atlas_name, width=packResult[0], height=packResult[1], color_mode=texMode, file_type=args['atlas_type'], border=borderSize)
+    atlas_data = AtlasData(name=dirName, width=packResult[0], height=packResult[1], color_mode=texMode, file_type=args['atlas_type'], border=borderSize)
     for tex in texture_packer.texArr:
         atlas_data.add_texture(tex)
 
