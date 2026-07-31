@@ -36,11 +36,21 @@ On OSX, i recommend using Brew to manage the install (but macports will work as 
 `cd src`
 `python AtlasGenerator.py --help`
 
+### Alternative: pip install ###
+
+The project also installs as a regular Python package, which puts
+`texture-atlas-generator` and `texture-image-font-generator` on your PATH
+instead of needing to `cd src` first:
+
+`pip install -e .`
+`texture-atlas-generator --help`
+`texture-image-font-generator --help`
+
 
 ## Running Tests ##
 
 * Install the test dependencies (from the repo root, with the venv activated)
-`pip install -r requirements-dev.txt`
+`pip install -r requirements-dev.txt` (or `pip install -e ".[dev]"`)
 
 * Run the test suite
 `pytest`

@@ -2,3 +2,6 @@ env/*
 *.pyc
 .coverage
 htmlcov/
+build/
+dist/
+*.egg-info/
