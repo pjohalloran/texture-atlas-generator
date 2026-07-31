@@ -31,5 +31,5 @@ class Parser:
         if not self.is_ready_to_save():
             raise ParserError('Cannot save to file - no data, please parse data before trying to save')
 
-        with open(filename, 'w') as file:
+        with open(filename, 'w', encoding='utf-8') as file:
             file.write(self.parser_output)

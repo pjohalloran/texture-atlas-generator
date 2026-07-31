@@ -70,7 +70,7 @@ def parse_args():
 
 
 def get_font_chars(char_file_path):
-    with open(char_file_path) as chars_file:
+    with open(char_file_path, encoding='utf-8') as chars_file:
         return chars_file.read()
 
 
