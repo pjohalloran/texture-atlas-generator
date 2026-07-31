@@ -197,7 +197,7 @@ class TexturePackerMaxRects(TexturePacker):
             # Try to place the rectangle in upright (non-flipped) orientation.
             if rect.get_width() >= width and rect.get_height() >= height:
                 topSideY = rect.y1 + height
-                if topSideY < bestY and (topSideY == bestY and rect.x1 < bestX):
+                if topSideY < bestY or (topSideY == bestY and rect.x1 < bestX):
                     bestRect = Rect.InitWithDim(rect.x1, rect.y1, width, height)
                     bestY = topSideY
                     bestX = rect.x1

@@ -1,0 +1,9 @@
+def rects_overlap(a, b):
+    return not (a.x2 <= b.x1 or a.x1 >= b.x2 or a.y2 <= b.y1 or a.y1 >= b.y2)
+
+
+def assert_no_overlaps(rects):
+    for i in range(len(rects)):
+        for j in range(i + 1, len(rects)):
+            assert not rects_overlap(rects[i], rects[j]), \
+                "Rects overlap: %s and %s" % (vars(rects[i]), vars(rects[j]))
