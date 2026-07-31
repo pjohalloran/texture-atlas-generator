@@ -57,9 +57,6 @@ class TexturePackerMaxRects(TexturePacker):
         if rect is None:
             raise PackerError('Failed to fit in %s' % (name))
 
-        if (rect.get_height() == 0):
-            return rect
-
         if (rect.y2) > self.bin_height:
             raise PackerError('Can not fit in vertically %s' % (str(rect)))
 

@@ -103,3 +103,22 @@ def test_allow_rotations_true_keeps_placements_non_overlapping(heuristic):
     for tex, (orig_w, orig_h) in zip(packer.texArr, sizes):
         assert tex.width * tex.height == orig_w * orig_h
     assert_no_overlaps([tex.get_rect() for tex in packer.texArr])
+
+
+def test_zero_dimension_texture_does_not_desync_later_placements():
+    # Regression test: add_texture() used to special-case a zero-height rect
+    # by returning early, skipping _place_rect() (which is what appends to
+    # used_rect_list). pack_textures() pairs texArr and used_rect_list
+    # positionally by index, so that one skipped entry shifted every later
+    # texture's assigned position by one, leaving the last texture unplaced
+    # with no exception raised. A zero-height glyph is a completely ordinary
+    # occurrence in ImageFontGenerator - e.g. font.getbbox(' ') on a real
+    # TrueType font returns a zero-height bounding box.
+    packer = TexturePackerMaxRects(FreeRectChoiceHeuristicEnum.RectBestAreaFit, 64, 64)
+    packer.add_texture(5, 0, "space-like")
+    packer.add_texture(10, 10, "a")
+    packer.add_texture(8, 8, "b")
+    packer.pack_textures(True, True)
+
+    assert all(tex.placed for tex in packer.texArr)
+    assert_no_overlaps([tex.get_rect() for tex in packer.texArr])
