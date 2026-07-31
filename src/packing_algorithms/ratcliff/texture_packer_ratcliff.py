@@ -8,6 +8,7 @@ import logging
 
 from packing_algorithms.ratcliff.node import Node
 from geom.geom import next_power_of_two
+from packing_algorithms.texture_packer import PackerError
 from packing_algorithms.texture_packer import TexturePacker
 
 logger = logging.getLogger(__name__)
@@ -149,8 +150,7 @@ class TexturePackerRatcliff(TexturePacker):
 
             # we should always find a fit location!
             if(bestFitNode.x == 0 and bestFitNode.y == 0 and bestFitNode.get_rect().get_width() == 0 and bestFitNode.get_rect().get_height() == 0):
-                logger.error("TexturePacker::pack_textures() BestFit node not found!!")
-                exit(1)
+                raise PackerError('BestFit node not found for %s' % (tex.name))
 
             self.validate()
 
@@ -170,8 +170,7 @@ class TexturePackerRatcliff(TexturePacker):
                     self.validate()
                 else:
                     if (tex.longestEdge <= bestFitNode.height):
-                        logger.error("TexturePacker::PackTexture() ERROR - Current textures longest edge is less than the BestFitNodes Height!!!")
-                        exit(1)
+                        raise PackerError('%s longest edge does not fit the BestFit node height' % (tex.name))
 
                     if (tex.height < tex.width):
                         tex.flip_dimensions()

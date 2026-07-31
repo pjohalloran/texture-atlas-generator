@@ -46,6 +46,13 @@ from geom.geom import next_power_of_two
 
 logger = logging.getLogger(__name__)
 
+# Upper bound on the retry-at-a-bigger-size loop in create_atlas(). Some
+# packers (e.g. ratcliff) ignore the requested bin size and are fully
+# deterministic, so a PackerError from them will recur at every size;
+# without a cap the retry loop would grow curr_size forever without ever
+# converging.
+MAX_ATLAS_SIZE = 16384
+
 
 def pack_atlas(args, dirPath, curr_size):
     """Open every image file directly inside dirPath and add it to a fresh
@@ -101,6 +108,8 @@ def create_atlas(texMode, dirPath, atlasPath, dirName, args):
             imagesList = result[2]
             done = True
         except PackerError:
+            if curr_size >= MAX_ATLAS_SIZE:
+                raise
             curr_size = next_power_of_two(curr_size)
             logger.info("Failed, trying next power of two: %s", curr_size)
 

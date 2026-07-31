@@ -44,6 +44,10 @@ from packing_algorithms.texture_packer import PackerError
 
 logger = logging.getLogger(__name__)
 
+# Upper bound on the retry-at-a-bigger-size loop in create_imagefont(); see
+# the matching constant in AtlasGenerator.py for why a cap is needed.
+MAX_ATLAS_SIZE = 16384
+
 
 def parse_args():
     arg_parser = argparse.ArgumentParser(description='Command line tool for creating image fonts.')
@@ -126,6 +130,8 @@ def create_imagefont(res_path, font_filename, point_size, text, color, atlas_typ
             image_dict = result[2]
             done = True
         except PackerError:
+            if curr_size >= MAX_ATLAS_SIZE:
+                raise
             curr_size = next_power_of_two(curr_size)
             logger.info("Failed, trying next power of two: %s", curr_size)
 
