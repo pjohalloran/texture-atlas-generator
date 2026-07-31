@@ -1,5 +1,10 @@
+from typing import Dict
+
+from atlas.texture import Texture
+
+
 class AtlasData:
-    texture_dict = None
+    texture_dict: Dict[str, Texture] = None
     border = 1
     width = 0
     height = 0
@@ -7,7 +12,7 @@ class AtlasData:
     file_type = ""
     name = ""
 
-    def __init__(self, name, width=512, height=512, border=1, color_mode="RGBA", file_type="tga"):
+    def __init__(self, name: str, width: int = 512, height: int = 512, border: int = 1, color_mode: str = "RGBA", file_type: str = "tga") -> None:
         self.texture_dict = {}
         self.name = name
         self.border = border
@@ -16,8 +21,8 @@ class AtlasData:
         self.color_mode = color_mode
         self.file_type = file_type
 
-    def add_texture(self, texture):
+    def add_texture(self, texture: Texture) -> None:
         self.texture_dict[texture.name] = texture
 
-    def get_texture_count(self):
+    def get_texture_count(self) -> int:
         return len(self.texture_dict)

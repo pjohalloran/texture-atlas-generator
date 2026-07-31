@@ -5,6 +5,7 @@
 #
 
 import logging
+from typing import List, Optional, Tuple
 
 from packing_algorithms.ratcliff.node import Node
 from geom.geom import next_power_of_two
@@ -15,26 +16,26 @@ logger = logging.getLogger(__name__)
 
 
 class TexturePackerRatcliff(TexturePacker):
-    freeArr = None
+    freeArr: List[Node] = None
     longestEdge = 0
     totalArea = 0
 
-    def __init__(self):
+    def __init__(self) -> None:
         TexturePacker.__init__(self)
         self.freeArr = []
         self.longestEdge = 0
         self.totalArea = 0
 
-    def add_texture(self, width, height, name=""):
+    def add_texture(self, width: int, height: int, name: str = "") -> None:
         TexturePacker.add_texture(self, width, height, name)
         self.longestEdge = width if (width > self.longestEdge) else self.longestEdge
         self.longestEdge = height if (height > self.longestEdge) else self.longestEdge
         self.totalArea += width * height
 
-    def add_node(self, x, y, width, height):
+    def add_node(self, x: int, y: int, width: int, height: int) -> None:
         self.freeArr.append(Node(x, y, width, height))
 
-    def merge_nodes(self):
+    def merge_nodes(self) -> bool:
         for f in self.freeArr:
             fIdx = 0
             for s in self.freeArr:
@@ -46,18 +47,13 @@ class TexturePackerRatcliff(TexturePacker):
 
         return False
 
-    def validate(self):
+    def validate(self) -> None:
         for f in self.freeArr:
             for c in self.freeArr:
                 if (f != c):
                     f.validate(c)
 
-    def pack_textures(self, forcePowerOfTwo, onePixelBorder):
-        # 0 = width
-        # 1 = height
-        # 3 = returnValue
-        returnList = []
-
+    def pack_textures(self, forcePowerOfTwo: bool, onePixelBorder: bool) -> Tuple[int, int, int]:
         if (onePixelBorder):
             i = 0
             for t in self.texArr:
@@ -247,7 +243,4 @@ class TexturePackerRatcliff(TexturePacker):
         if (forcePowerOfTwo):
             height = next_power_of_two(height)
 
-        returnList.append(width)
-        returnList.append(height)
-        returnList.append((width * height) - self.totalArea)
-        return (returnList)
+        return (width, height, (width * height) - self.totalArea)

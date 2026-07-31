@@ -31,21 +31,23 @@ import os.path
 import argparse
 import logging
 import sys
+from typing import Any, Dict, Tuple
 
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
+from PIL.Image import Image as ImageType
 
 from atlas.atlas_data import AtlasData
+from packing_algorithms.texture_packer import TexturePacker, retry_with_growing_bin_size
 from util.utils import get_color
 from util.utils import get_packer
 from util.utils import get_parser
-from packing_algorithms.texture_packer import retry_with_growing_bin_size
 
 logger = logging.getLogger(__name__)
 
 
-def parse_args():
+def parse_args() -> Dict[str, Any]:
     arg_parser = argparse.ArgumentParser(description='Command line tool for creating image fonts.')
 
     arg_parser.add_argument('-v', '--verbose', action='store_true')
@@ -64,22 +66,22 @@ def parse_args():
     return {'parser': arg_parser, 'args': args}
 
 
-def get_font_chars(char_file_path):
+def get_font_chars(char_file_path: str) -> str:
     with open(char_file_path, encoding='utf-8') as chars_file:
         return chars_file.read()
 
 
-def get_fonts_path(res_path):
+def get_fonts_path(res_path: str) -> str:
     return os.path.join(res_path, 'fonts')
 
 
-def create_fonts_dir(res_path):
+def create_fonts_dir(res_path: str) -> None:
     fonts_path = get_fonts_path(res_path)
     if not os.path.exists(fonts_path):
         os.mkdir(fonts_path)
 
 
-def pack_fonts(font_filename, point_size, text, color, atlas_size, packing_algorithm='maxrects', allow_rotations=False):
+def pack_fonts(font_filename: str, point_size: int, text: str, color: Tuple[int, ...], atlas_size: int, packing_algorithm: str = 'maxrects', allow_rotations: bool = False) -> Tuple[TexturePacker, Tuple[int, int, int], Dict[str, ImageType]]:
     """Render every character in text at point_size using font_filename onto
     its own RGBA image and pack them into a texture_packer sized for
     atlas_size.
@@ -93,7 +95,7 @@ def pack_fonts(font_filename, point_size, text, color, atlas_size, packing_algor
     image_dict = {}
     for character in text:
         bbox = font.getbbox(character)
-        size = (bbox[2] - bbox[0], bbox[3] - bbox[1])
+        size = (int(bbox[2] - bbox[0]), int(bbox[3] - bbox[1]))
         name = '%s_%s_%s' % (os.path.basename(font_filename), str(point_size), character)
         image_dict[name] = Image.new('RGBA', size, color)
         draw = ImageDraw.Draw(image_dict[name])
@@ -106,7 +108,7 @@ def pack_fonts(font_filename, point_size, text, color, atlas_size, packing_algor
     return (texture_packer, packResult, image_dict)
 
 
-def create_imagefont(res_path, font_filename, point_size, text, color, atlas_type, output_data_type, packing_algorithm='maxrects', allow_rotations=False):
+def create_imagefont(res_path: str, font_filename: str, point_size: int, text: str, color: Tuple[int, ...], atlas_type: str, output_data_type: str, packing_algorithm: str = 'maxrects', allow_rotations: bool = False) -> None:
     """Render every character in text at point_size, pack the glyphs into a
     single image font atlas (retrying at the next power-of-two bin size as
     needed), then write the atlas image and its manifest under
@@ -138,7 +140,7 @@ def create_imagefont(res_path, font_filename, point_size, text, color, atlas_typ
     atlas_image.save(font_image_name, atlas_type)
 
 
-def main():
+def main() -> int:
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
     parser_dict = parse_args()
 

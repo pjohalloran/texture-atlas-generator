@@ -1,4 +1,5 @@
 import logging
+from typing import Callable, List, Optional, Tuple, TypeVar
 
 from atlas.texture import Texture
 from geom.geom import next_power_of_two
@@ -11,12 +12,14 @@ logger = logging.getLogger(__name__)
 # loop would grow the size forever without ever converging.
 DEFAULT_MAX_BIN_SIZE = 16384
 
+T = TypeVar('T')
+
 
 class PackerError(Exception):
     pass
 
 
-def retry_with_growing_bin_size(pack_fn, initial_size, max_size=DEFAULT_MAX_BIN_SIZE):
+def retry_with_growing_bin_size(pack_fn: Callable[[int], T], initial_size: int, max_size: int = DEFAULT_MAX_BIN_SIZE) -> T:
     """Call pack_fn(curr_size) repeatedly, doubling curr_size to the next
     power of two each time it raises PackerError, until it succeeds or
     max_size is reached (at which point the PackerError propagates).
@@ -42,17 +45,17 @@ class TexturePacker:
     (or via get_texture()).
     """
 
-    texArr = None
+    texArr: List[Texture] = None
     allow_rotations = False
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.texArr = []
 
-    def add_texture(self, width, height, name):
+    def add_texture(self, width: int, height: int, name: str) -> None:
         """Queue a texture of the given size for packing."""
         self.texArr.append(Texture(width, height, name))
 
-    def get_texture(self, name):
+    def get_texture(self, name: str) -> Optional[Texture]:
         """Return the packed Texture with this name, or None if not found.
 
         The returned Texture's width/height already reflect its placed
@@ -64,10 +67,10 @@ class TexturePacker:
                 return t
         return None
 
-    def get_texture_count(self):
+    def get_texture_count(self) -> int:
         return len(self.texArr)
 
-    def pack_textures(self, powerOfTwo, oneBorderPixel):
+    def pack_textures(self, powerOfTwo: bool, oneBorderPixel: bool) -> Tuple[int, int, int]:
         """Place every queued texture and return (bin_width, bin_height, wasted_area).
 
         Raises PackerError if the queued textures can't all fit.

@@ -1,8 +1,9 @@
 import json
+from typing import Any, Dict
 
-from data_parsers.parser import Parser
 from atlas.atlas_data import AtlasData
 from atlas.texture import Texture
+from data_parsers.parser import Parser
 
 TYPES = {'AtlasData': AtlasData, 'Texture': Texture}
 
@@ -16,7 +17,7 @@ class CustomTypeEncoder(json.JSONEncoder):
     type to which the object belongs.  That single key maps to another
     object literal which is just the __dict__ of the object encoded."""
 
-    def default(self, obj):
+    def default(self, obj: Any) -> Dict[str, Any]:
         if isinstance(obj, AtlasData):
             key = 'Atlas'
             return {key: obj.__dict__}
@@ -28,8 +29,8 @@ class CustomTypeEncoder(json.JSONEncoder):
 
 class JsonParser(Parser):
 
-    def get_file_ext(self):
+    def get_file_ext(self) -> str:
         return 'json'
 
-    def parse(self, atlas_data):
+    def parse(self, atlas_data: AtlasData) -> None:
         self.parser_output = json.dumps(atlas_data, cls=CustomTypeEncoder, indent=4)

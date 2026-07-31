@@ -1,4 +1,5 @@
 import sys
+from typing import List, Optional, Tuple
 
 from packing_algorithms.texture_packer import TexturePacker
 from packing_algorithms.texture_packer import PackerError
@@ -11,13 +12,13 @@ class FreeRectChoiceHeuristicEnum:
 
 
 class TexturePackerMaxRects(TexturePacker):
-    used_rect_list = None
-    free_rect_list = None
+    used_rect_list: List[Rect] = None
+    free_rect_list: List[Rect] = None
     bin_width = 0
     bin_height = 0
     heuristic = FreeRectChoiceHeuristicEnum.RectBestShortSideFit
 
-    def __init__(self, method, width=0, height=0):
+    def __init__(self, method: int, width: int = 0, height: int = 0) -> None:
         TexturePacker.__init__(self)
         self.used_rect_list = []
         self.free_rect_list = []
@@ -26,7 +27,7 @@ class TexturePackerMaxRects(TexturePacker):
         self.free_rect_list.append(Rect.InitWithDim(0, 0, self.bin_width, self.bin_height))
         self.heuristic = method
 
-    def get_occupancy(self):
+    def get_occupancy(self) -> float:
         usedSurfaceArea = 0
 
         for rect in self.used_rect_list:
@@ -34,7 +35,7 @@ class TexturePackerMaxRects(TexturePacker):
 
         return float(usedSurfaceArea) / self._get_bin_area()
 
-    def add_texture(self, width, height, name):
+    def add_texture(self, width: int, height: int, name: str) -> Rect:
         TexturePacker.add_texture(self, width, height, name)
         result = None
 
@@ -78,7 +79,7 @@ class TexturePackerMaxRects(TexturePacker):
 
         return rect
 
-    def pack_textures(self, powerOfTwo, oneBorderPixel):
+    def pack_textures(self, powerOfTwo: bool, oneBorderPixel: bool) -> Tuple[int, int, int]:
         i = 0
 
         for rect in self.used_rect_list:
@@ -87,10 +88,10 @@ class TexturePackerMaxRects(TexturePacker):
 
         return (self.bin_width, self.bin_height, 0)
 
-    def _get_bin_area(self):
+    def _get_bin_area(self) -> int:
         return self.bin_width * self.bin_height
 
-    def _place_rect(self, rect):
+    def _place_rect(self, rect: Rect) -> None:
         count = len(self.free_rect_list)
         i = 0
         while i < count:
@@ -103,7 +104,7 @@ class TexturePackerMaxRects(TexturePacker):
         self._prune_free_list()
         self.used_rect_list.append(rect)
 
-    def _prune_free_list(self):
+    def _prune_free_list(self) -> None:
         # Go through each pair and remove any rectangle that is redundant.
         i = 0
         while i < len(self.free_rect_list):
@@ -119,7 +120,7 @@ class TexturePackerMaxRects(TexturePacker):
                 j += 1
             i += 1
 
-    def _contact_point_score_node(self, x, y, width, height):
+    def _contact_point_score_node(self, x: int, y: int, width: int, height: int) -> int:
         score = 0
 
         if x == 0 or x + width == self.bin_width:
@@ -135,7 +136,7 @@ class TexturePackerMaxRects(TexturePacker):
 
         return score
 
-    def _split_free_node(self, free_rect, used_rect):
+    def _split_free_node(self, free_rect: Rect, used_rect: Rect) -> bool:
         # Test with SAT if the rectangles even intersect.
         if used_rect.x1 >= free_rect.x2 or used_rect.x2 <= free_rect.x1 or used_rect.y1 >= free_rect.y2 or used_rect.y2 <= free_rect.y1:
             return False
@@ -164,7 +165,7 @@ class TexturePackerMaxRects(TexturePacker):
 
         return True
 
-    def _find_position_for_new_node_bottom_left(self, width, height):
+    def _find_position_for_new_node_bottom_left(self, width: int, height: int) -> Tuple[Optional[Rect], bool, int, int]:
         bestRect = None
         bestRotated = False
         bestX = sys.maxsize
@@ -190,7 +191,7 @@ class TexturePackerMaxRects(TexturePacker):
 
         return (bestRect, bestRotated, bestX, bestY)
 
-    def _find_position_for_new_node_best_short_side_fit(self, width, height):
+    def _find_position_for_new_node_best_short_side_fit(self, width: int, height: int) -> Tuple[Optional[Rect], bool, int, int]:
         bestNode = None
         bestRotated = False
         bestShortSideFit = sys.maxsize
@@ -224,7 +225,7 @@ class TexturePackerMaxRects(TexturePacker):
 
         return (bestNode, bestRotated, bestShortSideFit, bestLongSideFit)
 
-    def _find_position_for_new_node_best_long_side_fit(self, width, height):
+    def _find_position_for_new_node_best_long_side_fit(self, width: int, height: int) -> Tuple[Optional[Rect], bool, int, int]:
         bestNode = None
         bestRotated = False
         bestLongSideFit = sys.maxsize
@@ -258,7 +259,7 @@ class TexturePackerMaxRects(TexturePacker):
 
         return (bestNode, bestRotated, bestShortSideFit, bestLongSideFit)
 
-    def _find_position_for_new_node_best_area_fit(self, width, height):
+    def _find_position_for_new_node_best_area_fit(self, width: int, height: int) -> Tuple[Optional[Rect], bool, int, int]:
         bestNode = None
         bestRotated = False
         bestAreaFit = sys.maxsize
@@ -292,7 +293,7 @@ class TexturePackerMaxRects(TexturePacker):
 
         return (bestNode, bestRotated, bestAreaFit, bestShortSideFit)
 
-    def _find_position_for_new_node_contact_point(self, width, height):
+    def _find_position_for_new_node_contact_point(self, width: int, height: int) -> Tuple[Optional[Rect], bool, int]:
         bestNode = None
         bestRotated = False
         bestContactScore = -1

@@ -33,21 +33,23 @@ import os.path
 import argparse
 import logging
 import sys
+from typing import Any, Dict, List, Tuple
 
 from PIL import Image
+from PIL.Image import Image as ImageType
 
 from atlas.atlas_data import AtlasData
+from packing_algorithms.texture_packer import TexturePacker, retry_with_growing_bin_size
 from util.utils import get_parser
 from util.utils import get_packer
 from util.utils import get_atlas_path
 from util.utils import clear_atlas_dir
 from util.utils import get_color
-from packing_algorithms.texture_packer import retry_with_growing_bin_size
 
 logger = logging.getLogger(__name__)
 
 
-def pack_atlas(args, dirPath, curr_size):
+def pack_atlas(args: Dict[str, Any], dirPath: str, curr_size: int) -> Tuple[TexturePacker, Tuple[int, int, int], List[Tuple[str, ImageType]], bool]:
     """Open every image file directly inside dirPath and add it to a fresh
     texture packer sized for curr_size.
 
@@ -82,7 +84,7 @@ def pack_atlas(args, dirPath, curr_size):
     return (texture_packer, packResult, imagesList, had_errors)
 
 
-def create_atlas(texMode, dirPath, atlasPath, dirName, args):
+def create_atlas(texMode: str, dirPath: str, atlasPath: str, dirName: str, args: Dict[str, Any]) -> bool:
     """Pack every image in dirPath into a single atlas, retrying at the next
     power-of-two bin size each time the current size can't fit them all, then
     write the atlas image and its manifest (xml/json) to atlasPath.
@@ -118,7 +120,7 @@ def create_atlas(texMode, dirPath, atlasPath, dirName, args):
     return not had_errors
 
 
-def iterate_data_directory(texMode, atlasPath, resPath, args):
+def iterate_data_directory(texMode: str, atlasPath: str, resPath: str, args: Dict[str, Any]) -> bool:
     """Create one atlas per immediate subdirectory of resPath, treating each
     subdirectory's name as the atlas name and its contents as the images to
     pack into it.
@@ -137,7 +139,7 @@ def iterate_data_directory(texMode, atlasPath, resPath, args):
     return all_ok
 
 
-def parse_args():
+def parse_args() -> Dict[str, Any]:
     arg_parser = argparse.ArgumentParser(description='Command line tool for creating texture atlases.')
 
     arg_parser.add_argument('-v', '--verbose', action='store_true')
@@ -157,7 +159,7 @@ def parse_args():
     return {'parser': arg_parser, 'args': args}
 
 
-def main():
+def main() -> int:
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
     parser_dict = parse_args()
 
