@@ -32,6 +32,7 @@
 import os.path
 import argparse
 import logging
+import sys
 
 from PIL import Image
 
@@ -58,15 +59,16 @@ def pack_atlas(args, dirPath, curr_size):
     """Open every image file directly inside dirPath and add it to a fresh
     texture packer sized for curr_size.
 
-    Returns a (texture_packer, pack_result, images_list) tuple, where
-    images_list holds (filename, PIL.Image) pairs for the images that were
-    successfully opened and packed.
+    Returns a (texture_packer, pack_result, images_list, had_errors) tuple,
+    where images_list holds (filename, PIL.Image) pairs for the images that
+    were successfully opened and packed, and had_errors is True if any
+    image in dirPath failed to open.
     """
     texture_packer = get_packer(args['packing_algorithm'], curr_size, args['maxrects_heuristic'], args['allow_rotations'])
     childDirs = os.listdir(dirPath)
 
-    index = 0
     imagesList = []
+    had_errors = False
 
     # Open all images in the directory and add to the packer input data structure.
     for currPath in childDirs:
@@ -78,26 +80,29 @@ def pack_atlas(args, dirPath, curr_size):
             img = Image.open(file_path)
             texture_packer.add_texture(img.size[0], img.size[1], currPath)
             imagesList.append((currPath, img))
-            index += 1
         except (IOError):
             logger.error("PIL failed to open file: %s", file_path)
+            had_errors = True
 
     # Pack the textures into an atlas as efficiently as possible.
     packResult = texture_packer.pack_textures(True, True)
 
-    return (texture_packer, packResult, imagesList)
+    return (texture_packer, packResult, imagesList, had_errors)
 
 
 def create_atlas(texMode, dirPath, atlasPath, dirName, args):
     """Pack every image in dirPath into a single atlas, retrying at the next
     power-of-two bin size each time the current size can't fit them all, then
     write the atlas image and its manifest (xml/json) to atlasPath.
+
+    Returns False if any image in dirPath failed to open, True otherwise.
     """
     done = False
     curr_size = int(args['maxrects_bin_size'])
     texture_packer = None
     imagesList = None
     packResult = None
+    had_errors = False
 
     # Retry until optimal font atlas size is found.
     while not done:
@@ -106,6 +111,7 @@ def create_atlas(texMode, dirPath, atlasPath, dirName, args):
             texture_packer = result[0]
             packResult = result[1]
             imagesList = result[2]
+            had_errors = result[3]
             done = True
         except PackerError:
             if curr_size >= MAX_ATLAS_SIZE:
@@ -134,18 +140,26 @@ def create_atlas(texMode, dirPath, atlasPath, dirName, args):
     if (args['verbose']):
         atlas_image.show()
 
+    return not had_errors
+
 
 def iterate_data_directory(texMode, atlasPath, resPath, args):
     """Create one atlas per immediate subdirectory of resPath, treating each
     subdirectory's name as the atlas name and its contents as the images to
     pack into it.
+
+    Returns False if any atlas had an image that failed to open, True
+    otherwise.
     """
+    all_ok = True
     childDirs = os.listdir(resPath)
     for currPath in childDirs:
         if (currPath.startswith(".")):
             continue
         if (os.path.isdir(os.path.join(resPath, currPath))):
-            create_atlas(texMode, os.path.join(resPath, currPath), atlasPath, currPath, args)
+            if not create_atlas(texMode, os.path.join(resPath, currPath), atlasPath, currPath, args):
+                all_ok = False
+    return all_ok
 
 
 def parse_args():
@@ -187,9 +201,9 @@ def main():
     atlasesPath = get_atlas_path(parser_dict['args']['res_path'])
     clear_atlas_dir(atlasesPath)
 
-    res = iterate_data_directory(parser_dict['args']['atlas_mode'], atlasesPath, textures_dir, parser_dict['args'])
-    return res
+    ok = iterate_data_directory(parser_dict['args']['atlas_mode'], atlasesPath, textures_dir, parser_dict['args'])
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

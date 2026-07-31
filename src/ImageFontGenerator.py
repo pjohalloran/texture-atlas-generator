@@ -30,6 +30,7 @@
 import os.path
 import argparse
 import logging
+import sys
 
 from PIL import Image
 from PIL import ImageFont
@@ -170,6 +171,8 @@ def main():
         logger.info("Creating for %s", size)
         create_imagefont(parser_dict['args']['res_path'], parser_dict['args']['font_file'], int(size), font_chars, get_color(parser_dict['args']['bg_color']), parser_dict['args']['atlas_type'], parser_dict['args']['output_data_type'], parser_dict['args']['allow_rotations'])
 
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
