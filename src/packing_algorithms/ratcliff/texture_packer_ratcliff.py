@@ -59,6 +59,13 @@ class TexturePackerRatcliff(TexturePacker):
             for t in self.texArr:
                 t.width += 2
                 t.height += 2
+                # Texture.longestEdge is computed once at construction from
+                # the pre-border size; without updating it here it stays 2px
+                # too small, and the edgeCount==0 placement branch below
+                # gates its fit/flip decision on this value - a stale value
+                # can wrongly pass a fit check for the bordered size, placing
+                # the texture partially outside the packed bin.
+                t.longestEdge += 2
                 self.texArr[i] = t
                 i += 1
             self.longestEdge += 2
