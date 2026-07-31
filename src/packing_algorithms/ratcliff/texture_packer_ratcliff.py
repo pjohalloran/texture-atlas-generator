@@ -5,7 +5,7 @@
 #
 
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 from packing_algorithms.ratcliff.node import Node
 from geom.geom import next_power_of_two
@@ -143,7 +143,7 @@ class TexturePackerRatcliff(TexturePacker):
                 idx += 1
 
             # we should always find a fit location!
-            if(bestFitNode.x == 0 and bestFitNode.y == 0 and bestFitNode.get_rect().get_width() == 0 and bestFitNode.get_rect().get_height() == 0):
+            if (bestFitNode.x == 0 and bestFitNode.y == 0 and bestFitNode.get_rect().get_width() == 0 and bestFitNode.get_rect().get_height() == 0):
                 raise PackerError('BestFit node not found for %s' % (tex.name))
 
             self.validate()
@@ -176,7 +176,7 @@ class TexturePackerRatcliff(TexturePacker):
                     bestFitNode.width -= tex.width
                     bestFitNode.height = tex.height
                     self.validate()
-            elif(edgeCount == 1):
+            elif (edgeCount == 1):
                 if (tex.width == bestFitNode.get_rect().get_width()):
                     tex.place_texture(bestFitNode.x, bestFitNode.y, False)
                     bestFitNode.y += tex.height
@@ -199,7 +199,7 @@ class TexturePackerRatcliff(TexturePacker):
                     bestFitNode.y += tex.height
                     bestFitNode.height -= tex.height
                     self.validate()
-            elif(edgeCount == 2):
+            elif (edgeCount == 2):
                 flipped = tex.width != bestFitNode.get_rect().get_width() or tex.height != bestFitNode.get_rect().get_height()
                 if flipped:
                     tex.flip_dimensions()

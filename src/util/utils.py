@@ -60,6 +60,6 @@ def get_color(color_text: str) -> Tuple[int, ...]:
 
 
 def clear_atlas_dir(directory: str) -> None:
-    if(os.path.isdir(directory)):
+    if (os.path.isdir(directory)):
         shutil.rmtree(directory)
     os.mkdir(directory)

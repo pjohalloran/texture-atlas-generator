@@ -142,16 +142,16 @@ def create_imagefont(res_path: str, font_filename: str, point_size: int, text: s
 
 def main() -> int:
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
-    parser_dict = parse_args()
+    args = parse_args()['args']
 
-    create_fonts_dir(parser_dict['args']['res_path'])
+    create_fonts_dir(args['res_path'])
 
-    font_chars = get_font_chars(parser_dict['args']['char_file'])
-    point_sizes_list = parser_dict['args']['point_sizes'].split(',')
+    font_chars = get_font_chars(args['char_file'])
+    point_sizes_list = args['point_sizes'].split(',')
 
     for size in point_sizes_list:
         logger.info("Creating for %s", size)
-        create_imagefont(parser_dict['args']['res_path'], parser_dict['args']['font_file'], int(size), font_chars, get_color(parser_dict['args']['bg_color']), parser_dict['args']['atlas_type'], parser_dict['args']['output_data_type'], parser_dict['args']['packing_algorithm'], parser_dict['args']['allow_rotations'])
+        create_imagefont(args['res_path'], args['font_file'], int(size), font_chars, get_color(args['bg_color']), args['atlas_type'], args['output_data_type'], args['packing_algorithm'], args['allow_rotations'])
 
     return 0
 
