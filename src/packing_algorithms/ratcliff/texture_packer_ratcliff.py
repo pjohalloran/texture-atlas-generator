@@ -4,9 +4,13 @@
 # (c) 2009 by John W. Ratcliff.
 #
 
+import logging
+
 from packing_algorithms.ratcliff.node import Node
 from geom.geom import next_power_of_two
 from packing_algorithms.texture_packer import TexturePacker
+
+logger = logging.getLogger(__name__)
 
 
 class TexturePackerRatcliff(TexturePacker):
@@ -145,7 +149,7 @@ class TexturePackerRatcliff(TexturePacker):
 
             # we should always find a fit location!
             if(bestFitNode.x == 0 and bestFitNode.y == 0 and bestFitNode.get_rect().get_width() == 0 and bestFitNode.get_rect().get_height() == 0):
-                print("TexturePacker::pack_textures() BestFit node not found!!")
+                logger.error("TexturePacker::pack_textures() BestFit node not found!!")
                 exit(1)
 
             self.validate()
@@ -166,7 +170,7 @@ class TexturePackerRatcliff(TexturePacker):
                     self.validate()
                 else:
                     if (tex.longestEdge <= bestFitNode.height):
-                        print("TexturePacker::PackTexture() ERROR - Current textures longest edge is less than the BestFitNodes Height!!!")
+                        logger.error("TexturePacker::PackTexture() ERROR - Current textures longest edge is less than the BestFitNodes Height!!!")
                         exit(1)
 
                     if (tex.height < tex.width):
@@ -214,7 +218,7 @@ class TexturePackerRatcliff(TexturePacker):
             loopI += 1
 
         while (self.merge_nodes()):
-            print("Merging nodes")
+            logger.debug("Merging nodes")
 
         index = 0
         height = 0

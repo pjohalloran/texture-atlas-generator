@@ -29,6 +29,7 @@
 
 import os.path
 import argparse
+import logging
 
 from PIL import Image
 from PIL import ImageFont
@@ -40,6 +41,8 @@ from util.utils import get_packer
 from util.utils import get_parser
 from geom.geom import next_power_of_two
 from packing_algorithms.texture_packer import PackerError
+
+logger = logging.getLogger(__name__)
 
 
 def parse_args():
@@ -76,6 +79,13 @@ def create_fonts_dir(res_path):
 
 
 def pack_fonts(font_filename, point_size, text, color, atlas_size):
+    """Render every character in text at point_size using font_filename onto
+    its own RGBA image and pack them into a texture_packer sized for
+    atlas_size.
+
+    Returns a (texture_packer, pack_result, image_dict) tuple, where
+    image_dict maps each generated glyph name to its rendered PIL.Image.
+    """
     texture_packer = get_packer('maxrects', str(atlas_size), 'area')
     font = ImageFont.truetype(font_filename, point_size)
 
@@ -96,6 +106,11 @@ def pack_fonts(font_filename, point_size, text, color, atlas_size):
 
 
 def create_imagefont(res_path, font_filename, point_size, text, color, atlas_type, output_data_type):
+    """Render every character in text at point_size, pack the glyphs into a
+    single image font atlas (retrying at the next power-of-two bin size as
+    needed), then write the atlas image and its manifest under
+    res_path/fonts.
+    """
     done = False
     curr_size = 64
     texture_packer = None
@@ -112,7 +127,7 @@ def create_imagefont(res_path, font_filename, point_size, text, color, atlas_typ
             done = True
         except PackerError:
             curr_size = next_power_of_two(curr_size)
-            print("Failed, trying next power of two", curr_size)
+            logger.info("Failed, trying next power of two: %s", curr_size)
 
     borderSize = 1
     font_image_name = os.path.join(get_fonts_path(res_path), '%s_%s.%s' % (os.path.basename(font_filename).split('.')[0], str(point_size), atlas_type))
@@ -136,6 +151,7 @@ def create_imagefont(res_path, font_filename, point_size, text, color, atlas_typ
 
 
 def main():
+    logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
     parser_dict = parse_args()
 
     create_fonts_dir(parser_dict['args']['res_path'])
@@ -144,7 +160,7 @@ def main():
     point_sizes_list = parser_dict['args']['point_sizes'].split(',')
 
     for size in point_sizes_list:
-        print("Creating for ", size)
+        logger.info("Creating for %s", size)
         create_imagefont(parser_dict['args']['res_path'], parser_dict['args']['font_file'], int(size), font_chars, get_color(parser_dict['args']['bg_color']), parser_dict['args']['atlas_type'], parser_dict['args']['output_data_type'])
 
 

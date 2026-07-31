@@ -31,6 +31,7 @@
 
 import os.path
 import argparse
+import logging
 
 from PIL import Image
 
@@ -43,8 +44,17 @@ from util.utils import get_color
 from packing_algorithms.texture_packer import PackerError
 from geom.geom import next_power_of_two
 
+logger = logging.getLogger(__name__)
+
 
 def pack_atlas(args, dirPath, curr_size):
+    """Open every image file directly inside dirPath and add it to a fresh
+    texture packer sized for curr_size.
+
+    Returns a (texture_packer, pack_result, images_list) tuple, where
+    images_list holds (filename, PIL.Image) pairs for the images that were
+    successfully opened and packed.
+    """
     texture_packer = get_packer(args['packing_algorithm'], curr_size, args['maxrects_heuristic'])
     childDirs = os.listdir(dirPath)
 
@@ -63,7 +73,7 @@ def pack_atlas(args, dirPath, curr_size):
             imagesList.append((currPath, img))
             index += 1
         except (IOError):
-            print("ERROR: PIL failed to open file: ", file_path)
+            logger.error("PIL failed to open file: %s", file_path)
 
     # Pack the textures into an atlas as efficiently as possible.
     packResult = texture_packer.pack_textures(True, True)
@@ -72,6 +82,10 @@ def pack_atlas(args, dirPath, curr_size):
 
 
 def create_atlas(texMode, dirPath, atlasPath, dirName, args):
+    """Pack every image in dirPath into a single atlas, retrying at the next
+    power-of-two bin size each time the current size can't fit them all, then
+    write the atlas image and its manifest (xml/json) to atlasPath.
+    """
     done = False
     curr_size = int(args['maxrects_bin_size'])
     texture_packer = None
@@ -88,7 +102,7 @@ def create_atlas(texMode, dirPath, atlasPath, dirName, args):
             done = True
         except PackerError:
             curr_size = next_power_of_two(curr_size)
-            print("Failed, trying next power of two", curr_size)
+            logger.info("Failed, trying next power of two: %s", curr_size)
 
     borderSize = 1
     atlas_name = '%s.%s' % (dirName, args['atlas_type'])
@@ -114,6 +128,10 @@ def create_atlas(texMode, dirPath, atlasPath, dirName, args):
 
 
 def iterate_data_directory(texMode, atlasPath, resPath, args):
+    """Create one atlas per immediate subdirectory of resPath, treating each
+    subdirectory's name as the atlas name and its contents as the images to
+    pack into it.
+    """
     childDirs = os.listdir(resPath)
     for currPath in childDirs:
         if (currPath.startswith(".")):
@@ -142,17 +160,18 @@ def parse_args():
 
 
 def main():
+    logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
     parser_dict = parse_args()
 
     if (not os.path.isdir(parser_dict['args']['res_path'])):
-        print("Not passed a valid directory")
+        logger.error("Not passed a valid directory")
         parser_dict['parser'].print_help()
         return 1
 
     textures_dir = os.path.join(parser_dict['args']['res_path'], parser_dict['args']['images_dir'])
 
     if (not os.path.isdir(textures_dir)):
-        print(parser_dict['args']['res_path'], "does not contain a images or textures directory named", parser_dict['args']['images_dir'])
+        logger.error("%s does not contain a images or textures directory named %s", parser_dict['args']['res_path'], parser_dict['args']['images_dir'])
         parser_dict['parser'].print_help()
         return 1
 

@@ -37,6 +37,15 @@ On OSX, i recommend using Brew to manage the install (but macports will work as 
 `python AtlasGenerator.py --help`
 
 
+## Running Tests ##
+
+* Install the test dependencies (from the repo root, with the venv activated)
+`pip install -r requirements-dev.txt`
+
+* Run the test suite
+`pytest`
+
+
 ## Contributer List ##
 * PJ O Halloran
 
