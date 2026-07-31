@@ -28,15 +28,19 @@ def test_place_texture_with_flipped_true():
     assert tex.flipped is True
 
 
-def test_flip_dimensions_swaps_width_and_height_when_flipped():
+def test_flip_dimensions_always_swaps_width_and_height():
+    # flip_dimensions() is an unconditional swap - callers decide when to
+    # call it (typically alongside setting .flipped = True) rather than it
+    # deciding for itself based on .flipped, since callers need it to run
+    # before .flipped is necessarily set (e.g. before place_texture()).
     tex = Texture(10, 20, name="foo.png")
-    tex.flipped = True
     tex.flip_dimensions()
     assert (tex.width, tex.height) == (20, 10)
 
 
-def test_flip_dimensions_noop_when_not_flipped():
+def test_flip_dimensions_twice_is_a_round_trip():
     tex = Texture(10, 20, name="foo.png")
+    tex.flip_dimensions()
     tex.flip_dimensions()
     assert (tex.width, tex.height) == (10, 20)
 

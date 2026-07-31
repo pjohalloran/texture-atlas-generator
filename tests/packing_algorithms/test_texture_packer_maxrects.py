@@ -69,3 +69,37 @@ def test_get_texture_returns_named_texture_and_none_for_unknown():
     packer.add_texture(10, 10, "a")
     assert packer.get_texture("a").name == "a"
     assert packer.get_texture("does-not-exist") is None
+
+
+def test_allow_rotations_false_rejects_a_texture_that_only_fits_rotated():
+    # 20x8 doesn't fit upright in a 10-wide bin, but would fit as 8x20.
+    packer = TexturePackerMaxRects(FreeRectChoiceHeuristicEnum.RectBestAreaFit, 10, 20)
+    with pytest.raises(PackerError):
+        packer.add_texture(20, 8, "tall-when-rotated")
+
+
+def test_allow_rotations_true_places_and_flips_a_texture_that_only_fits_rotated():
+    packer = TexturePackerMaxRects(FreeRectChoiceHeuristicEnum.RectBestAreaFit, 10, 20)
+    packer.allow_rotations = True
+    packer.add_texture(20, 8, "tall-when-rotated")
+    packer.pack_textures(True, True)
+
+    tex = packer.get_texture("tall-when-rotated")
+    assert tex.flipped is True
+    assert (tex.width, tex.height) == (8, 20)
+    assert tex.width * tex.height == 20 * 8
+
+
+@pytest.mark.parametrize("heuristic", HEURISTICS)
+def test_allow_rotations_true_keeps_placements_non_overlapping(heuristic):
+    packer = TexturePackerMaxRects(heuristic, 40, 40)
+    packer.allow_rotations = True
+    sizes = [(30, 6), (6, 30), (20, 5), (5, 20), (10, 10)]
+    for i, (w, h) in enumerate(sizes):
+        packer.add_texture(w, h, "tex%d" % i)
+    packer.pack_textures(True, True)
+
+    assert all(tex.placed for tex in packer.texArr)
+    for tex, (orig_w, orig_h) in zip(packer.texArr, sizes):
+        assert tex.width * tex.height == orig_w * orig_h
+    assert_no_overlaps([tex.get_rect() for tex in packer.texArr])

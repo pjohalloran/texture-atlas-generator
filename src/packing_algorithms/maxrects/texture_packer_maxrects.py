@@ -51,68 +51,44 @@ class TexturePackerMaxRects(TexturePacker):
         else:
             raise NotImplementedError('Unknown MaxRects Heuristic encountered')
 
-        if result[0] is None:
+        rect, rotated = result[0], result[1]
+
+        if rect is None:
             raise PackerError('Failed to fit in %s' % (name))
 
-        if (result[0].get_height() == 0):
-            return result[0]
+        if (rect.get_height() == 0):
+            return rect
 
-        if (result[0].y2) > self.bin_height:
-            raise PackerError('Can not fit in vertically %s' % (str(result[0])))
+        if (rect.y2) > self.bin_height:
+            raise PackerError('Can not fit in vertically %s' % (str(rect)))
 
-        if (result[0].x2) > self.bin_width:
-            raise PackerError('Can not fit in horizontally %s' % (str(result[0])))
+        if (rect.x2) > self.bin_width:
+            raise PackerError('Can not fit in horizontally %s' % (str(rect)))
 
-        self._place_rect(result[0])
-        return result[0]
+        self._place_rect(rect)
+
+        # The winning rect may already reflect a 90-degree-rotated footprint
+        # (see the allow_rotations branches below); swap the queued
+        # Texture's own dimensions to match so downstream consumers know to
+        # rotate its pixel data before compositing it into the atlas.
+        tex = self.texArr[-1]
+        if rotated:
+            tex.flip_dimensions()
+        tex.flipped = rotated
+
+        return rect
 
     def pack_textures(self, powerOfTwo, oneBorderPixel):
         i = 0
 
         for rect in self.used_rect_list:
-            self.texArr[i].place_texture(rect.x1, rect.y1)
+            self.texArr[i].place_texture(rect.x1, rect.y1, self.texArr[i].flipped)
             i += 1
 
         return (self.bin_width, self.bin_height, 0)
 
     def _get_bin_area(self):
         return self.bin_width * self.bin_height
-
-    def _score_rect(self, width, height, method):
-        result = None
-        score1 = sys.maxsize
-        score2 = sys.maxsize
-
-        if self.heuristic == FreeRectChoiceHeuristicEnum.RectBestShortSideFit:
-            result = self._find_position_for_new_node_best_short_side_fit(width, height)
-            score1 = result[1]
-            score2 = result[2]
-        elif self.heuristic == FreeRectChoiceHeuristicEnum.RectBestLongSideFit:
-            result = self._find_position_for_new_node_best_long_side_fit(width, height)
-            #TODO: Is score order here correct??
-            score2 = result[1]
-            score1 = result[2]
-        elif self.heuristic == FreeRectChoiceHeuristicEnum.RectBestAreaFit:
-            result = self._find_position_for_new_node_best_area_fit(width, height)
-            score1 = result[1]
-            score2 = result[2]
-        elif self.heuristic == FreeRectChoiceHeuristicEnum.RectBottomLeftRule:
-            result = self._find_position_for_new_node_bottom_left(width, height)
-            score1 = result[1]
-            score2 = result[2]
-        elif self.heuristic == FreeRectChoiceHeuristicEnum.RectContactPointRule:
-            result = self._find_position_for_new_node_contact_point(width, height)
-            # Reverse since we are minimizing, but for contact point score bigger is better.
-            score1 = -result[1]
-            score2 = result[2]
-        else:
-            raise NotImplementedError('Unknown MaxRects Heuristic encountered')
-
-        if result[0].get_height() == 0:
-            score1 = sys.maxsize
-            score2 = sys.maxsize
-
-        return (result[0], score1, score2)
 
     def _place_rect(self, rect):
         count = len(self.free_rect_list)
@@ -190,6 +166,7 @@ class TexturePackerMaxRects(TexturePacker):
 
     def _find_position_for_new_node_bottom_left(self, width, height):
         bestRect = None
+        bestRotated = False
         bestX = sys.maxsize
         bestY = sys.maxsize
 
@@ -199,6 +176,7 @@ class TexturePackerMaxRects(TexturePacker):
                 topSideY = rect.y1 + height
                 if topSideY < bestY or (topSideY == bestY and rect.x1 < bestX):
                     bestRect = Rect.InitWithDim(rect.x1, rect.y1, width, height)
+                    bestRotated = False
                     bestY = topSideY
                     bestX = rect.x1
 
@@ -206,13 +184,15 @@ class TexturePackerMaxRects(TexturePacker):
                 topSideY = rect.y1 + width
                 if topSideY < bestY or (topSideY == bestY and rect.x1 < bestX):
                     bestRect = Rect.InitWithDim(rect.x1, rect.y1, height, width)
+                    bestRotated = True
                     bestY = topSideY
                     bestX = rect.x1
 
-        return (bestRect, bestX, bestY)
+        return (bestRect, bestRotated, bestX, bestY)
 
     def _find_position_for_new_node_best_short_side_fit(self, width, height):
         bestNode = None
+        bestRotated = False
         bestShortSideFit = sys.maxsize
         bestLongSideFit = sys.maxsize
 
@@ -226,6 +206,7 @@ class TexturePackerMaxRects(TexturePacker):
 
                 if shortSideFit < bestShortSideFit or (shortSideFit == bestShortSideFit and longSideFit < bestLongSideFit):
                     bestNode = Rect.InitWithDim(rect.x1, rect.y1, width, height)
+                    bestRotated = False
                     bestShortSideFit = shortSideFit
                     bestLongSideFit = longSideFit
 
@@ -237,13 +218,15 @@ class TexturePackerMaxRects(TexturePacker):
 
                 if flippedShortSideFit < bestShortSideFit or (flippedShortSideFit == bestShortSideFit and flippedLongSideFit < bestLongSideFit):
                     bestNode = Rect.InitWithDim(rect.x1, rect.y1, height, width)
+                    bestRotated = True
                     bestShortSideFit = flippedShortSideFit
                     bestLongSideFit = flippedLongSideFit
 
-        return (bestNode, bestShortSideFit, bestLongSideFit)
+        return (bestNode, bestRotated, bestShortSideFit, bestLongSideFit)
 
     def _find_position_for_new_node_best_long_side_fit(self, width, height):
         bestNode = None
+        bestRotated = False
         bestLongSideFit = sys.maxsize
         bestShortSideFit = sys.maxsize
 
@@ -257,6 +240,7 @@ class TexturePackerMaxRects(TexturePacker):
 
                 if longSideFit < bestLongSideFit or (longSideFit == bestLongSideFit and shortSideFit < bestShortSideFit):
                     bestNode = Rect.InitWithDim(rect.x1, rect.y1, width, height)
+                    bestRotated = False
                     bestShortSideFit = shortSideFit
                     bestLongSideFit = longSideFit
 
@@ -268,13 +252,15 @@ class TexturePackerMaxRects(TexturePacker):
 
                 if longSideFit < bestLongSideFit or (longSideFit == bestLongSideFit and shortSideFit < bestShortSideFit):
                     bestNode = Rect.InitWithDim(rect.x1, rect.y1, height, width)
+                    bestRotated = True
                     bestShortSideFit = shortSideFit
                     bestLongSideFit = longSideFit
 
-        return (bestNode, bestShortSideFit, bestLongSideFit)
+        return (bestNode, bestRotated, bestShortSideFit, bestLongSideFit)
 
     def _find_position_for_new_node_best_area_fit(self, width, height):
         bestNode = None
+        bestRotated = False
         bestAreaFit = sys.maxsize
         bestShortSideFit = sys.maxsize
 
@@ -289,6 +275,7 @@ class TexturePackerMaxRects(TexturePacker):
 
                 if areaFit < bestAreaFit or (areaFit == bestAreaFit and shortSideFit < bestShortSideFit):
                     bestNode = Rect.InitWithDim(rect.x1, rect.y1, width, height)
+                    bestRotated = False
                     bestShortSideFit = shortSideFit
                     bestAreaFit = areaFit
 
@@ -299,13 +286,15 @@ class TexturePackerMaxRects(TexturePacker):
 
                 if areaFit < bestAreaFit or (areaFit == bestAreaFit and shortSideFit < bestShortSideFit):
                     bestNode = Rect.InitWithDim(rect.x1, rect.y1, height, width)
+                    bestRotated = True
                     bestShortSideFit = shortSideFit
                     bestAreaFit = areaFit
 
-        return (bestNode, bestAreaFit, bestShortSideFit)
+        return (bestNode, bestRotated, bestAreaFit, bestShortSideFit)
 
     def _find_position_for_new_node_contact_point(self, width, height):
         bestNode = None
+        bestRotated = False
         bestContactScore = -1
 
         for rect in self.free_rect_list:
@@ -314,12 +303,14 @@ class TexturePackerMaxRects(TexturePacker):
                 score = self._contact_point_score_node(rect.x1, rect.y1, width, height)
                 if score > bestContactScore:
                     bestNode = Rect.InitWithDim(rect.x1, rect.y1, width, height)
+                    bestRotated = False
                     bestContactScore = score
 
             if self.allow_rotations and (rect.get_width() >= height and rect.get_height() >= width):
                 score = self._contact_point_score_node(rect.x1, rect.y1, height, width)
                 if score > bestContactScore:
                     bestNode = Rect.InitWithDim(rect.x1, rect.y1, height, width)
+                    bestRotated = True
                     bestContactScore = score
 
-        return (bestNode, bestContactScore)
+        return (bestNode, bestRotated, bestContactScore)

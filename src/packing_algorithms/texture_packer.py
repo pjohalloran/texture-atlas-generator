@@ -24,14 +24,15 @@ class TexturePacker:
         self.texArr.append(Texture(width, height, name))
 
     def get_texture(self, name):
-        """Return the packed Texture with this name, or None if not found."""
-        tex = None
+        """Return the packed Texture with this name, or None if not found.
+
+        The returned Texture's width/height already reflect its placed
+        orientation (i.e. already swapped if .flipped is True) - callers
+        compositing pixel data should rotate it to match when .flipped.
+        """
         for t in self.texArr:
             if (t.name == name):
-                tex = t
-                if (tex.flipped):
-                    tex.flip_dimensions()
-                return tex
+                return t
         return None
 
     def get_texture_count(self):

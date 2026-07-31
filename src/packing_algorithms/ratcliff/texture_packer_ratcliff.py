@@ -194,20 +194,30 @@ class TexturePackerRatcliff(TexturePacker):
                     bestFitNode.width -= tex.width
                     self.validate()
                 elif (tex.width == bestFitNode.get_rect().get_height()):
+                    tex.flip_dimensions()
                     tex.place_texture(bestFitNode.x, bestFitNode.y, True)
-                    bestFitNode.x += tex.height
-                    bestFitNode.width -= tex.height
+                    bestFitNode.x += tex.width
+                    bestFitNode.width -= tex.width
                     self.validate()
                 elif (tex.height == bestFitNode.get_rect().get_width()):
+                    tex.flip_dimensions()
                     tex.place_texture(bestFitNode.x, bestFitNode.y, True)
-                    bestFitNode.y += tex.width
-                    bestFitNode.height -= tex.width
+                    bestFitNode.y += tex.height
+                    bestFitNode.height -= tex.height
                     self.validate()
             elif(edgeCount == 2):
                 flipped = tex.width != bestFitNode.get_rect().get_width() or tex.height != bestFitNode.get_rect().get_height()
+                if flipped:
+                    tex.flip_dimensions()
                 tex.place_texture(bestFitNode.x, bestFitNode.y, flipped)
                 if (previousBestFitNodeIdx >= 0):
                     previousBestFitNodeIdx = index
+                # A perfect (both-edges-matched) fit consumes the entire
+                # free node, unlike the edgeCount 0/1 cases which carve a
+                # smaller node out of a larger one. Shrink it to zero area
+                # so it's never selected as free space for a later texture.
+                bestFitNode.width = 0
+                bestFitNode.height = 0
                 self.validate()
 
             # Save latest version of texture and Node back into lists since python is pass by value
@@ -229,11 +239,7 @@ class TexturePackerRatcliff(TexturePacker):
                 t.y += 1
                 self.texArr[index] = t
 
-            y = 0
-            if (t.flipped):
-                y = t.y + t.width
-            else:
-                y = t.y + t.height
+            y = t.y + t.height
 
             if (y > height):
                 height = y

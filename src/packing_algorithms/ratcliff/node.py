@@ -48,6 +48,12 @@ class Node:
         return (r1 != r2)
 
     def merge(self, node):
+        # The horizontal (x1/x2) branches below mirror the vertical
+        # (y1/y2) branches above: require a matching span on the other
+        # axis (both endpoints, not just one) before checking adjacency.
+        # A prior version compared r1.y2 to r2.y1 here instead of r2.y2,
+        # a condition only satisfiable by a negative-height node - i.e.
+        # never - making horizontal merges permanently unreachable.
         ret = False
         r1 = self.get_rect()
         r2 = node.get_rect()
@@ -59,17 +65,17 @@ class Node:
 
         if (r1.x1 == r2.x1 and r1.x2 == r2.x2 and r1.y1 == r2.y2):
             self.y = node.y
-            self.height += node.get_rect().height
+            self.height += node.height
             ret = True
         elif (r1.x1 == r2.x1 and r1.x2 == r2.x2 and r1.y2 == r2.y1):
-            self.height += node.get_rect().height
+            self.height += node.height
             ret = True
-        elif (r1.y1 == r2.y1 and r1.y2 == r2.y1 and r1.x1 == r2.x2):
+        elif (r1.y1 == r2.y1 and r1.y2 == r2.y2 and r1.x1 == r2.x2):
             self.x = node.x
-            self.width += node.get_rect().width
+            self.width += node.width
             ret = True
-        elif (r1.y1 == r2.y1 and r1.y2 == r2.y1 and r1.x2 == r2.x1):
-            self.width += node.get_rect().width
+        elif (r1.y1 == r2.y1 and r1.y2 == r2.y2 and r1.x2 == r2.x1):
+            self.width += node.width
             ret = True
 
         return ret

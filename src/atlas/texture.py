@@ -20,10 +20,11 @@ class Texture:
         self.placed = True
 
     def flip_dimensions(self):
-        if(self.flipped):
-            tmp = self.width
-            self.width = self.height
-            self.height = tmp
+        """Swap width and height in place. Callers are responsible for also
+        setting self.flipped to record that this texture's pixel content
+        needs a matching 90-degree rotation before it's composited.
+        """
+        self.width, self.height = self.height, self.width
 
     def to_dict(self):
         tex_dict = {}
