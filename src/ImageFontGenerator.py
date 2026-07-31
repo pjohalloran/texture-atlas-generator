@@ -61,8 +61,8 @@ def parse_args():
 
 
 def get_font_chars(char_file_path):
-    chars_file = open(char_file_path)
-    return chars_file.read()
+    with open(char_file_path) as chars_file:
+        return chars_file.read()
 
 
 def get_fonts_path(res_path):
@@ -94,7 +94,7 @@ def pack_fonts(font_filename, point_size, text, color, atlas_size):
     return (texture_packer, packResult, image_dict)
 
 
-def create_imagefont(res_path, font_filename, point_size, text, color):
+def create_imagefont(res_path, font_filename, point_size, text, color, atlas_type, output_data_type):
     done = False
     curr_size = 64
     texture_packer = None
@@ -114,12 +114,12 @@ def create_imagefont(res_path, font_filename, point_size, text, color):
             print "Failed, trying next power of two", curr_size
 
     borderSize = 1
-    font_image_name = os.path.join(get_fonts_path(res_path), '%s_%s.%s' % (os.path.basename(font_filename).split('.')[0], str(point_size), 'tga'))
-    atlas_data = AtlasData(name=font_image_name, width=packResult[0], height=packResult[1], color_mode='RGBA', file_type='tga', border=borderSize)
+    font_image_name = os.path.join(get_fonts_path(res_path), '%s_%s.%s' % (os.path.basename(font_filename).split('.')[0], str(point_size), atlas_type))
+    atlas_data = AtlasData(name=font_image_name, width=packResult[0], height=packResult[1], color_mode='RGBA', file_type=atlas_type, border=borderSize)
     for tex in texture_packer.texArr:
         atlas_data.add_texture(tex)
 
-    parser = get_parser('xml')
+    parser = get_parser(output_data_type)
     parser.parse(atlas_data)
     parser.save('%s.%s' % (font_image_name.split('.')[0], parser.get_file_ext()))
 
@@ -131,7 +131,7 @@ def create_imagefont(res_path, font_filename, point_size, text, color):
         atlas_image.paste(image_dict[name], (tex.x, tex.y))
         index += 1
 
-    atlas_image.save(os.path.join(get_fonts_path(res_path), font_image_name), 'tga')
+    atlas_image.save(font_image_name, atlas_type)
 
 
 def main():
@@ -144,7 +144,7 @@ def main():
 
     for size in point_sizes_list:
         print "Creating for ", size
-        create_imagefont(parser_dict['args']['res_path'], parser_dict['args']['font_file'], int(size), font_chars, get_color(parser_dict['args']['bg_color']))
+        create_imagefont(parser_dict['args']['res_path'], parser_dict['args']['font_file'], int(size), font_chars, get_color(parser_dict['args']['bg_color']), parser_dict['args']['atlas_type'], parser_dict['args']['output_data_type'])
 
 
 if __name__ == "__main__":

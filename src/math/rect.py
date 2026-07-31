@@ -12,7 +12,7 @@ class Rect:
         return cls(x, y, x+width, y+height)
 
     def contains(self, rect):
-        return self.x1 >= rect.x1 and self.y1 >= rect.y1 and self.x2 <= rect.x2 and self.y2 <= rect.y2
+        return self.x1 <= rect.x1 and self.y1 <= rect.y1 and self.x2 >= rect.x2 and self.y2 >= rect.y2
 
     def intersects(self, r):
         if (self.x2 < r.x1 or self.x1 > r.x2 or self.y2 < r.y1 or self.y1 > r.y2):
