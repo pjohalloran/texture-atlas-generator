@@ -38,7 +38,7 @@ from atlas.atlas_data import AtlasData
 from util.utils import get_color
 from util.utils import get_packer
 from util.utils import get_parser
-from math.math import next_power_of_two
+from geom.geom import next_power_of_two
 from packing_algorithms.texture_packer import PackerError
 
 
@@ -81,7 +81,8 @@ def pack_fonts(font_filename, point_size, text, color, atlas_size):
 
     image_dict = {}
     for character in text:
-        size = font.getsize(character)
+        bbox = font.getbbox(character)
+        size = (bbox[2] - bbox[0], bbox[3] - bbox[1])
         name = '%s_%s_%s' % (os.path.basename(font_filename), str(point_size), character)
         image_dict[name] = Image.new('RGBA', size, color)
         draw = ImageDraw.Draw(image_dict[name])
@@ -111,7 +112,7 @@ def create_imagefont(res_path, font_filename, point_size, text, color, atlas_typ
             done = True
         except PackerError:
             curr_size = next_power_of_two(curr_size)
-            print "Failed, trying next power of two", curr_size
+            print("Failed, trying next power of two", curr_size)
 
     borderSize = 1
     font_image_name = os.path.join(get_fonts_path(res_path), '%s_%s.%s' % (os.path.basename(font_filename).split('.')[0], str(point_size), atlas_type))
@@ -143,7 +144,7 @@ def main():
     point_sizes_list = parser_dict['args']['point_sizes'].split(',')
 
     for size in point_sizes_list:
-        print "Creating for ", size
+        print("Creating for ", size)
         create_imagefont(parser_dict['args']['res_path'], parser_dict['args']['font_file'], int(size), font_chars, get_color(parser_dict['args']['bg_color']), parser_dict['args']['atlas_type'], parser_dict['args']['output_data_type'])
 
 

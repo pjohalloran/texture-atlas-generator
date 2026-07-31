@@ -5,7 +5,7 @@
 #
 
 from packing_algorithms.ratcliff.node import Node
-from math.math import next_power_of_two
+from geom.geom import next_power_of_two
 from packing_algorithms.texture_packer import TexturePacker
 
 
@@ -66,7 +66,7 @@ class TexturePackerRatcliff(TexturePacker):
             self.longestEdge = next_power_of_two(self.longestEdge)
 
         width = self.longestEdge
-        count = self.totalArea / (self.longestEdge * self.longestEdge)
+        count = self.totalArea // (self.longestEdge * self.longestEdge)
         height = (count + 2) * self.longestEdge
 
         self.add_node(0, 0, width, height)
@@ -145,7 +145,7 @@ class TexturePackerRatcliff(TexturePacker):
 
             # we should always find a fit location!
             if(bestFitNode.x == 0 and bestFitNode.y == 0 and bestFitNode.get_rect().get_width() == 0 and bestFitNode.get_rect().get_height() == 0):
-                print "TexturePacker::pack_textures() BestFit node not found!!"
+                print("TexturePacker::pack_textures() BestFit node not found!!")
                 exit(1)
 
             self.validate()
@@ -214,7 +214,7 @@ class TexturePackerRatcliff(TexturePacker):
             loopI += 1
 
         while (self.merge_nodes()):
-            print "Merging nodes"
+            print("Merging nodes")
 
         index = 0
         height = 0

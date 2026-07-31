@@ -6,17 +6,16 @@ It is written in python and uses the python image library to generate the textur
 
 
 ##  Dependencies ##
-* python
-* PIL (http://www.pythonware.com/products/pil/)
-* simplejson (https://code.google.com/p/simplejson/)
+* python 3
+* Pillow (https://python-pillow.org/)
 
 Optional:
-* virtualenv
+* venv (part of the python 3 standard library)
 
 
 ## Installation ##
 
-My prefered way of installing the tool is to use a python virtualenv to keep the tool and its dependancies off your system and into a sub directory that can be safely deleted when you are done.
+My prefered way of installing the tool is to use a python venv to keep the tool and its dependencies off your system and into a sub directory that can be safely deleted when you are done.
 
 ### OSX ###
 
@@ -25,13 +24,10 @@ On OSX, i recommend using Brew to manage the install (but macports will work as 
 * Install python from brew
 `brew install python`
 
-* Install virtualenv with pip
-`pip install virtualenv`
-
 * Clone the project
 `git clone https://github.com/pjohalloran/texture-atlas-generator`
 
-* Create the virtualenv and install all the tools dependencies
+* Create the venv and install all the tools dependencies
 `cd texture-atlas-generator`
 `./create_virtualenv.sh`
 `. env/bin/activate`

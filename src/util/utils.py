@@ -48,7 +48,7 @@ def get_atlas_path(resource_path):
 
 def get_color(color_text):
     color_list = color_text.split(',')
-    color_list = map(int, color_list)
+    color_list = list(map(int, color_list))
     return tuple(color_list[:len(color_list)])
 
 

@@ -1,13 +1,13 @@
-import simplejson
+import json
 
-from parser import Parser
+from data_parsers.parser import Parser
 from atlas.atlas_data import AtlasData
 from atlas.texture import Texture
 
 TYPES = {'AtlasData': AtlasData, 'Texture': Texture}
 
 
-class CustomTypeEncoder(simplejson.JSONEncoder):
+class CustomTypeEncoder(json.JSONEncoder):
     """A custom JSONEncoder class that knows how to encode core custom
     objects.
 
@@ -23,7 +23,7 @@ class CustomTypeEncoder(simplejson.JSONEncoder):
         elif isinstance(obj, Texture):
             key = 'Image'
             return {key: obj.__dict__}
-        return simplejson.JSONEncoder.default(self, obj)
+        return json.JSONEncoder.default(self, obj)
 
 
 class JsonParser(Parser):
@@ -32,4 +32,4 @@ class JsonParser(Parser):
         return 'json'
 
     def parse(self, atlas_data):
-        self.parser_output = simplejson.dumps(atlas_data, cls=CustomTypeEncoder, indent=4)
+        self.parser_output = json.dumps(atlas_data, cls=CustomTypeEncoder, indent=4)

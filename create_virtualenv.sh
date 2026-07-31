@@ -1,6 +1,6 @@
 #!/bin/sh
 
-virtualenv env
+python3 -m venv env
 if [ $? -ne 0 ]; then
     echo "Failed to create python VirtualEnv"
     exit 1

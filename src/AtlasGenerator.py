@@ -41,7 +41,7 @@ from util.utils import get_atlas_path
 from util.utils import clear_atlas_dir
 from util.utils import get_color
 from packing_algorithms.texture_packer import PackerError
-from math.math import next_power_of_two
+from geom.geom import next_power_of_two
 
 
 def pack_atlas(args, dirPath, curr_size):
@@ -63,7 +63,7 @@ def pack_atlas(args, dirPath, curr_size):
             imagesList.append((currPath, img))
             index += 1
         except (IOError):
-            print "ERROR: PIL failed to open file: ", file_path
+            print("ERROR: PIL failed to open file: ", file_path)
 
     # Pack the textures into an atlas as efficiently as possible.
     packResult = texture_packer.pack_textures(True, True)
@@ -88,7 +88,7 @@ def create_atlas(texMode, dirPath, atlasPath, dirName, args):
             done = True
         except PackerError:
             curr_size = next_power_of_two(curr_size)
-            print "Failed, trying next power of two", curr_size
+            print("Failed, trying next power of two", curr_size)
 
     borderSize = 1
     atlas_name = '%s.%s' % (dirName, args['atlas_type'])
@@ -145,14 +145,14 @@ def main():
     parser_dict = parse_args()
 
     if (not os.path.isdir(parser_dict['args']['res_path'])):
-        print "Not passed a valid directory"
+        print("Not passed a valid directory")
         parser_dict['parser'].print_help()
         return 1
 
     textures_dir = os.path.join(parser_dict['args']['res_path'], parser_dict['args']['images_dir'])
 
     if (not os.path.isdir(textures_dir)):
-        print parser_dict['args']['res_path'], "does not contain a images or textures directory named", parser_dict['args']['images_dir']
+        print(parser_dict['args']['res_path'], "does not contain a images or textures directory named", parser_dict['args']['images_dir'])
         parser_dict['parser'].print_help()
         return 1
 

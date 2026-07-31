@@ -1,4 +1,4 @@
-from math.rect import Rect
+from geom.rect import Rect
 
 
 class Texture:

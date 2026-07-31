@@ -1,6 +1,6 @@
 import xml.dom.minidom
 
-from parser import Parser
+from data_parsers.parser import Parser
 
 
 class XmlParser(Parser):

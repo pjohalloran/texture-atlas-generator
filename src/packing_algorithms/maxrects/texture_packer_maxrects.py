@@ -2,8 +2,8 @@ import sys
 
 from packing_algorithms.texture_packer import TexturePacker
 from packing_algorithms.texture_packer import PackerError
-from math.rect import Rect
-from math.math import common_interval_length
+from geom.rect import Rect
+from geom.geom import common_interval_length
 
 
 class FreeRectChoiceHeuristicEnum:
@@ -80,8 +80,8 @@ class TexturePackerMaxRects(TexturePacker):
 
     def _score_rect(self, width, height, method):
         result = None
-        score1 = sys.maxint
-        score2 = sys.maxint
+        score1 = sys.maxsize
+        score2 = sys.maxsize
 
         if self.heuristic == FreeRectChoiceHeuristicEnum.RectBestShortSideFit:
             result = self._find_position_for_new_node_best_short_side_fit(width, height)
@@ -109,8 +109,8 @@ class TexturePackerMaxRects(TexturePacker):
             raise NotImplementedError('Unknown MaxRects Heuristic encountered')
 
         if result[0].get_height() == 0:
-            score1 = sys.maxint
-            score2 = sys.maxint
+            score1 = sys.maxsize
+            score2 = sys.maxsize
 
         return (result[0], score1, score2)
 
@@ -190,8 +190,8 @@ class TexturePackerMaxRects(TexturePacker):
 
     def _find_position_for_new_node_bottom_left(self, width, height):
         bestRect = None
-        bestX = sys.maxint
-        bestY = sys.maxint
+        bestX = sys.maxsize
+        bestY = sys.maxsize
 
         for rect in self.free_rect_list:
             # Try to place the rectangle in upright (non-flipped) orientation.
@@ -213,8 +213,8 @@ class TexturePackerMaxRects(TexturePacker):
 
     def _find_position_for_new_node_best_short_side_fit(self, width, height):
         bestNode = None
-        bestShortSideFit = sys.maxint
-        bestLongSideFit = sys.maxint
+        bestShortSideFit = sys.maxsize
+        bestLongSideFit = sys.maxsize
 
         for rect in self.free_rect_list:
             # Try to place the rectangle in upright (non-flipped) orientation.
@@ -244,8 +244,8 @@ class TexturePackerMaxRects(TexturePacker):
 
     def _find_position_for_new_node_best_long_side_fit(self, width, height):
         bestNode = None
-        bestLongSideFit = sys.maxint
-        bestShortSideFit = sys.maxint
+        bestLongSideFit = sys.maxsize
+        bestShortSideFit = sys.maxsize
 
         for rect in self.free_rect_list:
             # Try to place the rectangle in upright (non-flipped) orientation.
@@ -275,8 +275,8 @@ class TexturePackerMaxRects(TexturePacker):
 
     def _find_position_for_new_node_best_area_fit(self, width, height):
         bestNode = None
-        bestAreaFit = sys.maxint
-        bestShortSideFit = sys.maxint
+        bestAreaFit = sys.maxsize
+        bestShortSideFit = sys.maxsize
 
         for rect in self.free_rect_list:
             areaFit = rect.get_area() - (width * height)
