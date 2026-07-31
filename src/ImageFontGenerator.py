@@ -61,6 +61,7 @@ def parse_args():
     arg_parser.add_argument('-o', '--output-data-type', action='store', required=False, default='xml', choices=('xml', 'json'), help='The file output type of the image font chars data dictionary')
     arg_parser.add_argument('-c', '--bg-color', action='store', required=False, default='255,255,255,0', help='The background color of the unused area in the texture atlas (e.g. 255,255,255,255).')
     arg_parser.add_argument('-a', '--packing-algorithm', action='store', required=False, default='maxrects', choices=('ratcliff', 'maxrects'), help='The packing algorithm to use to pack the font chars.')
+    arg_parser.add_argument('-x', '--allow-rotations', action='store_true', help='Allow the maxrects packer to rotate glyphs 90 degrees to improve packing density. Has no effect on the ratcliff algorithm, which always considers rotation.')
 
     args = vars(arg_parser.parse_args())
 
@@ -82,7 +83,7 @@ def create_fonts_dir(res_path):
         os.mkdir(fonts_path)
 
 
-def pack_fonts(font_filename, point_size, text, color, atlas_size):
+def pack_fonts(font_filename, point_size, text, color, atlas_size, allow_rotations=False):
     """Render every character in text at point_size using font_filename onto
     its own RGBA image and pack them into a texture_packer sized for
     atlas_size.
@@ -90,7 +91,7 @@ def pack_fonts(font_filename, point_size, text, color, atlas_size):
     Returns a (texture_packer, pack_result, image_dict) tuple, where
     image_dict maps each generated glyph name to its rendered PIL.Image.
     """
-    texture_packer = get_packer('maxrects', str(atlas_size), 'area')
+    texture_packer = get_packer('maxrects', str(atlas_size), 'area', allow_rotations)
     font = ImageFont.truetype(font_filename, point_size)
 
     image_dict = {}
@@ -109,7 +110,7 @@ def pack_fonts(font_filename, point_size, text, color, atlas_size):
     return (texture_packer, packResult, image_dict)
 
 
-def create_imagefont(res_path, font_filename, point_size, text, color, atlas_type, output_data_type):
+def create_imagefont(res_path, font_filename, point_size, text, color, atlas_type, output_data_type, allow_rotations=False):
     """Render every character in text at point_size, pack the glyphs into a
     single image font atlas (retrying at the next power-of-two bin size as
     needed), then write the atlas image and its manifest under
@@ -124,7 +125,7 @@ def create_imagefont(res_path, font_filename, point_size, text, color, atlas_typ
     # Retry until optimal font atlas size is found.
     while not done:
         try:
-            result = pack_fonts(font_filename, point_size, text, color, curr_size)
+            result = pack_fonts(font_filename, point_size, text, color, curr_size, allow_rotations)
             texture_packer = result[0]
             packResult = result[1]
             image_dict = result[2]
@@ -147,11 +148,11 @@ def create_imagefont(res_path, font_filename, point_size, text, color, atlas_typ
 
     atlas_image = Image.new('RGBA', (packResult[0], packResult[1]), color)
 
-    index = 0
-    for name in image_dict.keys():
+    for name, glyph_image in image_dict.items():
         tex = texture_packer.get_texture(name)
-        atlas_image.paste(image_dict[name], (tex.x, tex.y))
-        index += 1
+        if tex.flipped:
+            glyph_image = glyph_image.transpose(Image.ROTATE_90)
+        atlas_image.paste(glyph_image, (tex.x, tex.y))
 
     atlas_image.save(font_image_name, atlas_type)
 
@@ -167,7 +168,7 @@ def main():
 
     for size in point_sizes_list:
         logger.info("Creating for %s", size)
-        create_imagefont(parser_dict['args']['res_path'], parser_dict['args']['font_file'], int(size), font_chars, get_color(parser_dict['args']['bg_color']), parser_dict['args']['atlas_type'], parser_dict['args']['output_data_type'])
+        create_imagefont(parser_dict['args']['res_path'], parser_dict['args']['font_file'], int(size), font_chars, get_color(parser_dict['args']['bg_color']), parser_dict['args']['atlas_type'], parser_dict['args']['output_data_type'], parser_dict['args']['allow_rotations'])
 
 
 if __name__ == "__main__":

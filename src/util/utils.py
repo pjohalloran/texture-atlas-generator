@@ -33,13 +33,18 @@ def get_maxrects_heuristic(heuristic):
         raise NotImplementedError('Unknown heuristic enum encountered')
 
 
-def get_packer(algorithm_type, size=0, heuristic=""):
+def get_packer(algorithm_type, size=0, heuristic="", allow_rotations=False):
     if algorithm_type == 'ratcliff':
-        return TexturePackerRatcliff()
+        packer = TexturePackerRatcliff()
     elif algorithm_type == 'maxrects':
-        return TexturePackerMaxRects(get_maxrects_heuristic(heuristic), int(size), int(size))
+        packer = TexturePackerMaxRects(get_maxrects_heuristic(heuristic), int(size), int(size))
     else:
         raise NotImplementedError('%s is unknown or not implemented yet.' % (algorithm_type))
+
+    # Only affects maxrects - ratcliff always considers rotation as part of
+    # its own algorithm, unrelated to this flag.
+    packer.allow_rotations = allow_rotations
+    return packer
 
 
 def get_atlas_path(resource_path):

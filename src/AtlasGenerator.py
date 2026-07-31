@@ -62,7 +62,7 @@ def pack_atlas(args, dirPath, curr_size):
     images_list holds (filename, PIL.Image) pairs for the images that were
     successfully opened and packed.
     """
-    texture_packer = get_packer(args['packing_algorithm'], curr_size, args['maxrects_heuristic'])
+    texture_packer = get_packer(args['packing_algorithm'], curr_size, args['maxrects_heuristic'], args['allow_rotations'])
     childDirs = os.listdir(dirPath)
 
     index = 0
@@ -125,11 +125,11 @@ def create_atlas(texMode, dirPath, atlasPath, dirName, args):
 
     atlas_image = Image.new(texMode, (packResult[0], packResult[1]), get_color(args['bg_color']))
 
-    index = 0
-    for image in imagesList:
-        tex = texture_packer.get_texture(image[0])
-        atlas_image.paste(image[1], (tex.x, tex.y))
-        index += 1
+    for image_name, source_image in imagesList:
+        tex = texture_packer.get_texture(image_name)
+        if tex.flipped:
+            source_image = source_image.transpose(Image.ROTATE_90)
+        atlas_image.paste(source_image, (tex.x, tex.y))
 
     atlas_image.save(os.path.join(atlasPath, os.path.basename(dirPath)) + "." + args['atlas_type'], args['atlas_type'])
     if (args['verbose']):
@@ -162,6 +162,7 @@ def parse_args():
     arg_parser.add_argument('-a', '--packing-algorithm', action='store', required=False, default='maxrects', choices=('ratcliff', 'maxrects'), help='The packing algorithm to use.')
     arg_parser.add_argument('-e', '--maxrects-heuristic', action='store', required=False, default='area', choices=('shortside', 'longside', 'area', 'bottomleft', 'contactpoint'), help='The packing heuristic/rule to use if the maxrects algorithm is selected.')
     arg_parser.add_argument('-s', '--maxrects-bin-size', action='store', required=False, default='1024', help='The size of atlas when using the maxrects algorithm.')
+    arg_parser.add_argument('-x', '--allow-rotations', action='store_true', help='Allow the maxrects packer to rotate textures 90 degrees to improve packing density. Has no effect on the ratcliff algorithm, which always considers rotation.')
 
     args = vars(arg_parser.parse_args())
 
