@@ -84,7 +84,7 @@ def create_fonts_dir(res_path):
         os.mkdir(fonts_path)
 
 
-def pack_fonts(font_filename, point_size, text, color, atlas_size, allow_rotations=False):
+def pack_fonts(font_filename, point_size, text, color, atlas_size, packing_algorithm='maxrects', allow_rotations=False):
     """Render every character in text at point_size using font_filename onto
     its own RGBA image and pack them into a texture_packer sized for
     atlas_size.
@@ -92,7 +92,7 @@ def pack_fonts(font_filename, point_size, text, color, atlas_size, allow_rotatio
     Returns a (texture_packer, pack_result, image_dict) tuple, where
     image_dict maps each generated glyph name to its rendered PIL.Image.
     """
-    texture_packer = get_packer('maxrects', str(atlas_size), 'area', allow_rotations)
+    texture_packer = get_packer(packing_algorithm, str(atlas_size), 'area', allow_rotations)
     font = ImageFont.truetype(font_filename, point_size)
 
     image_dict = {}
@@ -111,7 +111,7 @@ def pack_fonts(font_filename, point_size, text, color, atlas_size, allow_rotatio
     return (texture_packer, packResult, image_dict)
 
 
-def create_imagefont(res_path, font_filename, point_size, text, color, atlas_type, output_data_type, allow_rotations=False):
+def create_imagefont(res_path, font_filename, point_size, text, color, atlas_type, output_data_type, packing_algorithm='maxrects', allow_rotations=False):
     """Render every character in text at point_size, pack the glyphs into a
     single image font atlas (retrying at the next power-of-two bin size as
     needed), then write the atlas image and its manifest under
@@ -126,7 +126,7 @@ def create_imagefont(res_path, font_filename, point_size, text, color, atlas_typ
     # Retry until optimal font atlas size is found.
     while not done:
         try:
-            result = pack_fonts(font_filename, point_size, text, color, curr_size, allow_rotations)
+            result = pack_fonts(font_filename, point_size, text, color, curr_size, packing_algorithm, allow_rotations)
             texture_packer = result[0]
             packResult = result[1]
             image_dict = result[2]
@@ -169,7 +169,7 @@ def main():
 
     for size in point_sizes_list:
         logger.info("Creating for %s", size)
-        create_imagefont(parser_dict['args']['res_path'], parser_dict['args']['font_file'], int(size), font_chars, get_color(parser_dict['args']['bg_color']), parser_dict['args']['atlas_type'], parser_dict['args']['output_data_type'], parser_dict['args']['allow_rotations'])
+        create_imagefont(parser_dict['args']['res_path'], parser_dict['args']['font_file'], int(size), font_chars, get_color(parser_dict['args']['bg_color']), parser_dict['args']['atlas_type'], parser_dict['args']['output_data_type'], parser_dict['args']['packing_algorithm'], parser_dict['args']['allow_rotations'])
 
     return 0
 
