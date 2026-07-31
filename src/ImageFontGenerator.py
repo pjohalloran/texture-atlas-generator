@@ -93,7 +93,13 @@ def pack_fonts(font_filename: str, point_size: int, text: str, color: Tuple[int,
     font = ImageFont.truetype(font_filename, point_size)
 
     image_dict = {}
-    for character in text:
+    # dict.fromkeys() dedupes while preserving first-occurrence order. Without
+    # this, a repeated character adds multiple same-named Textures to the
+    # packer - image_dict (a real dict) collapses to one entry per name, but
+    # get_texture() returns the first match while AtlasData.add_texture()
+    # keeps the last, so the manifest and the pasted pixels disagree on
+    # where that character actually is.
+    for character in dict.fromkeys(text):
         bbox = font.getbbox(character)
         size = (int(bbox[2] - bbox[0]), int(bbox[3] - bbox[1]))
         name = '%s_%s_%s' % (os.path.basename(font_filename), str(point_size), character)
