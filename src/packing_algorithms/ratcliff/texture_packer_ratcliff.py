@@ -87,7 +87,6 @@ class TexturePackerRatcliff(TexturePacker):
             # And the most area...
             j = 0
             for texture in self.texArr:
-                #print "Checking texture ", tmpTex.GetName()
                 if (not texture.placed):
                     if (texture.longestEdge > longestEdge):
                         mostArea = texture.area
@@ -104,7 +103,6 @@ class TexturePackerRatcliff(TexturePacker):
             #   (2) A match of one edge with the minimum area left over after the split.
             #   (3) No edges match, so look for the node which leaves the least amount of area left over after the split.
             tex = self.texArr[index]
-            #print "Going to try and place_texture ", tex.GetName()
 
             leastY = 0x7FFFFFFF
             leastX = 0x7FFFFFFF
