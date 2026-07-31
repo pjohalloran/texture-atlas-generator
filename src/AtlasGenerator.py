@@ -42,17 +42,9 @@ from util.utils import get_packer
 from util.utils import get_atlas_path
 from util.utils import clear_atlas_dir
 from util.utils import get_color
-from packing_algorithms.texture_packer import PackerError
-from geom.geom import next_power_of_two
+from packing_algorithms.texture_packer import retry_with_growing_bin_size
 
 logger = logging.getLogger(__name__)
-
-# Upper bound on the retry-at-a-bigger-size loop in create_atlas(). Some
-# packers (e.g. ratcliff) ignore the requested bin size and are fully
-# deterministic, so a PackerError from them will recur at every size;
-# without a cap the retry loop would grow curr_size forever without ever
-# converging.
-MAX_ATLAS_SIZE = 16384
 
 
 def pack_atlas(args, dirPath, curr_size):
@@ -97,27 +89,10 @@ def create_atlas(texMode, dirPath, atlasPath, dirName, args):
 
     Returns False if any image in dirPath failed to open, True otherwise.
     """
-    done = False
-    curr_size = int(args['maxrects_bin_size'])
-    texture_packer = None
-    imagesList = None
-    packResult = None
-    had_errors = False
-
-    # Retry until optimal font atlas size is found.
-    while not done:
-        try:
-            result = pack_atlas(args, dirPath, curr_size)
-            texture_packer = result[0]
-            packResult = result[1]
-            imagesList = result[2]
-            had_errors = result[3]
-            done = True
-        except PackerError:
-            if curr_size >= MAX_ATLAS_SIZE:
-                raise
-            curr_size = next_power_of_two(curr_size)
-            logger.info("Failed, trying next power of two: %s", curr_size)
+    texture_packer, packResult, imagesList, had_errors = retry_with_growing_bin_size(
+        lambda curr_size: pack_atlas(args, dirPath, curr_size),
+        int(args['maxrects_bin_size']),
+    )
 
     borderSize = 1
     atlas_data = AtlasData(name=dirName, width=packResult[0], height=packResult[1], color_mode=texMode, file_type=args['atlas_type'], border=borderSize)

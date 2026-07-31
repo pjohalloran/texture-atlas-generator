@@ -40,14 +40,9 @@ from atlas.atlas_data import AtlasData
 from util.utils import get_color
 from util.utils import get_packer
 from util.utils import get_parser
-from geom.geom import next_power_of_two
-from packing_algorithms.texture_packer import PackerError
+from packing_algorithms.texture_packer import retry_with_growing_bin_size
 
 logger = logging.getLogger(__name__)
-
-# Upper bound on the retry-at-a-bigger-size loop in create_imagefont(); see
-# the matching constant in AtlasGenerator.py for why a cap is needed.
-MAX_ATLAS_SIZE = 16384
 
 
 def parse_args():
@@ -117,25 +112,10 @@ def create_imagefont(res_path, font_filename, point_size, text, color, atlas_typ
     needed), then write the atlas image and its manifest under
     res_path/fonts.
     """
-    done = False
-    curr_size = 64
-    texture_packer = None
-    image_dict = None
-    packResult = None
-
-    # Retry until optimal font atlas size is found.
-    while not done:
-        try:
-            result = pack_fonts(font_filename, point_size, text, color, curr_size, packing_algorithm, allow_rotations)
-            texture_packer = result[0]
-            packResult = result[1]
-            image_dict = result[2]
-            done = True
-        except PackerError:
-            if curr_size >= MAX_ATLAS_SIZE:
-                raise
-            curr_size = next_power_of_two(curr_size)
-            logger.info("Failed, trying next power of two: %s", curr_size)
+    texture_packer, packResult, image_dict = retry_with_growing_bin_size(
+        lambda curr_size: pack_fonts(font_filename, point_size, text, color, curr_size, packing_algorithm, allow_rotations),
+        64,
+    )
 
     borderSize = 1
     font_image_name = os.path.join(get_fonts_path(res_path), '%s_%s.%s' % (os.path.basename(font_filename).split('.')[0], str(point_size), atlas_type))

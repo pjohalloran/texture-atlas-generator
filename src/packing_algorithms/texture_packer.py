@@ -1,8 +1,37 @@
+import logging
+
 from atlas.texture import Texture
+from geom.geom import next_power_of_two
+
+logger = logging.getLogger(__name__)
+
+# Default upper bound for retry_with_growing_bin_size(). Some packers (e.g.
+# ratcliff) ignore the requested bin size and are fully deterministic, so a
+# PackerError from them will recur at every size; without a cap the retry
+# loop would grow the size forever without ever converging.
+DEFAULT_MAX_BIN_SIZE = 16384
 
 
 class PackerError(Exception):
     pass
+
+
+def retry_with_growing_bin_size(pack_fn, initial_size, max_size=DEFAULT_MAX_BIN_SIZE):
+    """Call pack_fn(curr_size) repeatedly, doubling curr_size to the next
+    power of two each time it raises PackerError, until it succeeds or
+    max_size is reached (at which point the PackerError propagates).
+
+    Returns whatever pack_fn(curr_size) returned on success.
+    """
+    curr_size = initial_size
+    while True:
+        try:
+            return pack_fn(curr_size)
+        except PackerError:
+            if curr_size >= max_size:
+                raise
+            curr_size = next_power_of_two(curr_size)
+            logger.info("Failed, trying next power of two: %s", curr_size)
 
 
 class TexturePacker:
