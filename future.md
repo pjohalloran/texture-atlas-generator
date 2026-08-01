@@ -126,6 +126,80 @@ architecture change needed, just new `Parser` subclasses registered in
 - **Content-hash filenames** — optional cache-busting suffix on output atlas
   filenames, useful for web-deployed games.
 
+## GUI Frontend
+
+Currently CLI-only. Both entry points are close to GUI-ready already: `pack_fonts()`/
+`create_imagefont()` (`src/ImageFontGenerator.py`) take plain typed parameters — no
+argparse, no `print`/`sys.exit` inside them — directly callable from a GUI as-is.
+`pack_atlas()`/`create_atlas()`/`iterate_data_directory()` (`src/AtlasGenerator.py`)
+take a raw `args: Dict[str, Any]` shaped like `vars(argparse.Namespace)`, which a GUI
+can just construct with matching keys (`packing_algorithm`, `maxrects_bin_size`,
+etc.) — not a hard blocker, just a seam. And critically, `TexturePacker.texArr`
+(`src/packing_algorithms/texture_packer.py`) and `Texture` (`src/atlas/texture.py`)
+already carry everything needed (`x`, `y`, `width`, `height`, `flipped`, `name`) to
+draw a live in-memory preview of a packed layout — a GUI can call
+`pack_atlas()`/`pack_fonts()` directly and iterate `texArr` to draw preview
+rectangles (or full composited pixels, reusing the same `flipped` →
+`transpose(Image.ROTATE_90)` logic already in `create_atlas`/`create_imagefont`)
+with zero file I/O in the preview loop.
+
+### Recommendation: Dear PyGui
+
+Given the "engine-friendly"/dear-imgui framing specifically, **Dear PyGui** is the
+strongest fit:
+
+- Python-native binding built directly on Dear ImGui's GPU-accelerated core
+  (DX11/Metal/Vulkan/OpenGL backends) — the same UI paradigm used by countless
+  in-engine debug/tool UIs, so it reads as "belongs next to a game engine" rather
+  than a generic desktop app.
+- Batteries-included Python API (docking, theming, dark-by-default, plotting,
+  drag-drop, node editors) — unlike raw `pyimgui`, no manual GLFW/OpenGL
+  window/render-loop wiring needed to get started.
+- Uniquely well suited to this tool specifically: a live, GPU-drawn preview canvas
+  of the packed atlas that updates in real time as algorithm/heuristic/rotation
+  settings change, driven directly from `texArr` as described above.
+- Tradeoff: reads as a "tool" aesthetic (dark theme, panels) rather than a
+  polished consumer app; no native OS menu bars/chrome by default.
+
+### Alternative: PySide6 (Qt for Python)
+
+If "pretty" means "genuinely native desktop app" rather than "game-tool":
+
+- Native file dialogs, drag-drop, OS-native menu bars, automatic light/dark mode,
+  full QSS styling if a custom look is wanted instead.
+- LGPL licensed — free for closed-source use too, unlike PyQt's GPL.
+- Preview still achievable via `QGraphicsView`/`QGraphicsScene` or a custom
+  `QPainter` widget, just not GPU-accelerated by default like Dear PyGui.
+- Heavier dependency (~50-80MB), steeper API surface, but a much larger
+  widget/dialog ecosystem.
+
+### Honorable mention: raw `pyimgui`
+
+The literal Dear ImGui bindings (not Dear PyGui) — worth it specifically if
+matching an existing in-house ImGui-based tool's exact look/feel matters more than
+ease of integration. Costs a hand-rolled window/render loop (GLFW+OpenGL or
+SDL2+OpenGL boilerplate) that Dear PyGui gives you for free.
+
+### Briefly noted alternatives
+
+- **CustomTkinter** — zero extra native dependencies (tkinter ships with Python),
+  "good enough" modern look, cheapest possible integration. Worth it if minimal
+  dependency footprint matters more than maximum polish.
+- **Flet** — Flutter-based, genuinely gorgeous Material-style UI with minimal
+  styling effort, cross-platform including web/mobile as a bonus. Heavier runtime
+  dependency, "modern app" feel rather than native OS or game-tool aesthetic.
+
+### Prerequisite refactor (small, worth doing regardless of toolkit choice)
+
+- Move `args['verbose']` → `.show()` out of `create_atlas()` (`src/AtlasGenerator.py`)
+  and into `main()` — right now it's a CLI-ish side effect baked into business logic
+  that a GUI would inherit oddly.
+- Give `create_imagefont()` a `bool` return mirroring `create_atlas()`'s, so a GUI
+  can detect per-size failures instead of always getting `None`.
+- Optionally give `AtlasGenerator`'s pack/create functions typed kwargs instead of a
+  raw args dict, matching `ImageFontGenerator`'s already-clean shape (lower
+  priority — the dict works fine as-is for a thin GUI adapter layer).
+
 ## Suggested Ordering (highest leverage first)
 
 1. Multi-page/multi-bin packing (removes the hard single-atlas-size ceiling)
@@ -136,3 +210,5 @@ architecture change needed, just new `Parser` subclasses registered in
 6. Engine-specific exporters (as real demand appears)
 7. FlatBuffers, compressed GPU textures (highest value but highest cost — save
    for when there's a concrete consuming engine to validate against)
+8. GUI frontend (Dear PyGui) — larger, more speculative undertaking than the rest
+   of this list; worth it once the CLI feature set above has settled down
