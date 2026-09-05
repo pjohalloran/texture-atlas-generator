@@ -102,16 +102,20 @@ class TexturePackerMaxRects(TexturePacker):
         self.used_rect_list.append(rect)
 
     def _prune_free_list(self) -> None:
-        # Go through each pair and remove any rectangle that is redundant.
+        # Go through each pair and remove any rectangle that is redundant,
+        # i.e. fully covered by another free rect. The rectangle to discard
+        # is always the *contained* (smaller) one - the containing rect is
+        # a strict superset of it, so nothing is lost by dropping the
+        # redundant one and keeping the larger free rect.
         i = 0
         while i < len(self.free_rect_list):
             j = i + 1
             while j < len(self.free_rect_list):
-                if self.free_rect_list[i].contains(self.free_rect_list[j]):
+                if self.free_rect_list[j].contains(self.free_rect_list[i]):
                     self.free_rect_list.pop(i)
                     i -= 1
                     break
-                if self.free_rect_list[j].contains(self.free_rect_list[i]):
+                if self.free_rect_list[i].contains(self.free_rect_list[j]):
                     self.free_rect_list.pop(j)
                     j -= 1
                 j += 1

@@ -1,5 +1,6 @@
 import pytest
 
+from geom.rect import Rect
 from packing_algorithms.maxrects.texture_packer_maxrects import (
     FreeRectChoiceHeuristicEnum,
     TexturePackerMaxRects,
@@ -103,6 +104,30 @@ def test_allow_rotations_true_keeps_placements_non_overlapping(heuristic):
     for tex, (orig_w, orig_h) in zip(packer.texArr, sizes):
         assert tex.width * tex.height == orig_w * orig_h
     assert_no_overlaps([tex.get_rect() for tex in packer.texArr])
+
+
+def test_prune_free_list_keeps_the_larger_of_two_containing_rects():
+    # Regression test: _prune_free_list() removed whichever rect was on the
+    # "container" side of a contains() check, instead of the "contained"
+    # (redundant, strictly smaller) side - i.e. exactly backwards. Every
+    # time two free rects had a containment relationship, the bigger, more
+    # useful free rect was discarded and the smaller, genuinely redundant
+    # one was kept. This doesn't cause overlaps (free rects are allowed to
+    # overlap by design in maxrects - the bug is about wasted space, not
+    # corrupted placement), but could silently discard the large majority
+    # of an atlas's free space after only a few placements, forcing far
+    # larger bins than actually needed. Found by fuzzing a real-world
+    # 36-texture set that needed a 2048x2048 atlas with this bug present
+    # but only 1024x1024 (matching the theoretical minimum almost exactly)
+    # once fixed.
+    packer = TexturePackerMaxRects(FreeRectChoiceHeuristicEnum.RectBestAreaFit, 100, 100)
+    small = Rect(10, 10, 20, 20)
+    big = Rect(0, 0, 50, 50)
+    packer.free_rect_list = [small, big]
+
+    packer._prune_free_list()
+
+    assert packer.free_rect_list == [big]
 
 
 def test_zero_dimension_texture_does_not_desync_later_placements():
