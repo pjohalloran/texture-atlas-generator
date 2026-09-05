@@ -13,6 +13,12 @@ if [ $? -ne 0 ]; then
 fi
 echo "virtualenv activated"
 
+eval "pip install --upgrade pip"
+if [ $? -ne 0 ]; then
+    echo "Error Failed to upgrade pip in the virtualenv"
+    exit 1
+fi
+
 eval "pip install -r requirements.txt"
 if [ $? -ne 0 ]; then
     echo "Error Failed to install requirements"

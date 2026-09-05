@@ -22,7 +22,7 @@ My prefered way of installing the tool is to use a python venv to keep the tool 
 On OSX, i recommend using Brew to manage the install (but macports will work as well if you prefer).
 
 * Install python from brew
-`brew install python`
+`brew install python3`
 
 * Clone the project
 `git clone https://github.com/pjohalloran/texture-atlas-generator`
