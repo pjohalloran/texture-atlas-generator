@@ -1,9 +1,10 @@
 import sys
+from typing import List, Optional, Tuple
 
 from packing_algorithms.texture_packer import TexturePacker
 from packing_algorithms.texture_packer import PackerError
-from math.rect import Rect
-from math.math import common_interval_length
+from geom.rect import Rect
+from geom.geom import common_interval_length
 
 
 class FreeRectChoiceHeuristicEnum:
@@ -11,13 +12,13 @@ class FreeRectChoiceHeuristicEnum:
 
 
 class TexturePackerMaxRects(TexturePacker):
-    used_rect_list = None
-    free_rect_list = None
+    used_rect_list: List[Rect] = None
+    free_rect_list: List[Rect] = None
     bin_width = 0
     bin_height = 0
     heuristic = FreeRectChoiceHeuristicEnum.RectBestShortSideFit
 
-    def __init__(self, method, width=0, height=0):
+    def __init__(self, method: int, width: int = 0, height: int = 0) -> None:
         TexturePacker.__init__(self)
         self.used_rect_list = []
         self.free_rect_list = []
@@ -26,7 +27,7 @@ class TexturePackerMaxRects(TexturePacker):
         self.free_rect_list.append(Rect.InitWithDim(0, 0, self.bin_width, self.bin_height))
         self.heuristic = method
 
-    def get_occupancy(self):
+    def get_occupancy(self) -> float:
         usedSurfaceArea = 0
 
         for rect in self.used_rect_list:
@@ -34,7 +35,7 @@ class TexturePackerMaxRects(TexturePacker):
 
         return float(usedSurfaceArea) / self._get_bin_area()
 
-    def add_texture(self, width, height, name):
+    def add_texture(self, width: int, height: int, name: str) -> Rect:
         TexturePacker.add_texture(self, width, height, name)
         result = None
 
@@ -51,70 +52,43 @@ class TexturePackerMaxRects(TexturePacker):
         else:
             raise NotImplementedError('Unknown MaxRects Heuristic encountered')
 
-        if result[0] is None:
+        rect, rotated = result[0], result[1]
+
+        if rect is None:
             raise PackerError('Failed to fit in %s' % (name))
 
-        if (result[0].get_height() == 0):
-            return result[0]
+        if (rect.y2) > self.bin_height:
+            raise PackerError('Can not fit in vertically %s' % (str(rect)))
 
-        if (result[0].y2) > self.bin_height:
-            raise PackerError('Can not fit in vertically %s' % (str(result[0])))
+        if (rect.x2) > self.bin_width:
+            raise PackerError('Can not fit in horizontally %s' % (str(rect)))
 
-        if (result[0].x2) > self.bin_width:
-            raise PackerError('Can not fit in horizontally %s' % (str(result[0])))
+        self._place_rect(rect)
 
-        self._place_rect(result[0])
-        return result[0]
+        # The winning rect may already reflect a 90-degree-rotated footprint
+        # (see the allow_rotations branches below); swap the queued
+        # Texture's own dimensions to match so downstream consumers know to
+        # rotate its pixel data before compositing it into the atlas.
+        tex = self.texArr[-1]
+        if rotated:
+            tex.flip_dimensions()
+        tex.flipped = rotated
 
-    def pack_textures(self, powerOfTwo, oneBorderPixel):
+        return rect
+
+    def pack_textures(self, powerOfTwo: bool, oneBorderPixel: bool) -> Tuple[int, int, int]:
         i = 0
 
         for rect in self.used_rect_list:
-            self.texArr[i].place_texture(rect.x1, rect.y1)
+            self.texArr[i].place_texture(rect.x1, rect.y1, self.texArr[i].flipped)
             i += 1
 
         return (self.bin_width, self.bin_height, 0)
 
-    def _get_bin_area(self):
+    def _get_bin_area(self) -> int:
         return self.bin_width * self.bin_height
 
-    def _score_rect(self, width, height, method):
-        result = None
-        score1 = sys.maxint
-        score2 = sys.maxint
-
-        if self.heuristic == FreeRectChoiceHeuristicEnum.RectBestShortSideFit:
-            result = self._find_position_for_new_node_best_short_side_fit(width, height)
-            score1 = result[1]
-            score2 = result[2]
-        elif self.heuristic == FreeRectChoiceHeuristicEnum.RectBestLongSideFit:
-            result = self._find_position_for_new_node_best_long_side_fit(width, height)
-            #TODO: Is score order here correct??
-            score2 = result[1]
-            score1 = result[2]
-        elif self.heuristic == FreeRectChoiceHeuristicEnum.RectBestAreaFit:
-            result = self._find_position_for_new_node_best_area_fit(width, height)
-            score1 = result[1]
-            score2 = result[2]
-        elif self.heuristic == FreeRectChoiceHeuristicEnum.RectBottomLeftRule:
-            result = self._find_position_for_new_node_bottom_left(width, height)
-            score1 = result[1]
-            score2 = result[2]
-        elif self.heuristic == FreeRectChoiceHeuristicEnum.RectContactPointRule:
-            result = self._find_position_for_new_node_contact_point(width, height)
-            # Reverse since we are minimizing, but for contact point score bigger is better.
-            score1 = -result[1]
-            score2 = result[2]
-        else:
-            raise NotImplementedError('Unknown MaxRects Heuristic encountered')
-
-        if result[0].get_height() == 0:
-            score1 = sys.maxint
-            score2 = sys.maxint
-
-        return (result[0], score1, score2)
-
-    def _place_rect(self, rect):
+    def _place_rect(self, rect: Rect) -> None:
         count = len(self.free_rect_list)
         i = 0
         while i < count:
@@ -127,23 +101,27 @@ class TexturePackerMaxRects(TexturePacker):
         self._prune_free_list()
         self.used_rect_list.append(rect)
 
-    def _prune_free_list(self):
-        # Go through each pair and remove any rectangle that is redundant.
+    def _prune_free_list(self) -> None:
+        # Go through each pair and remove any rectangle that is redundant,
+        # i.e. fully covered by another free rect. The rectangle to discard
+        # is always the *contained* (smaller) one - the containing rect is
+        # a strict superset of it, so nothing is lost by dropping the
+        # redundant one and keeping the larger free rect.
         i = 0
         while i < len(self.free_rect_list):
             j = i + 1
             while j < len(self.free_rect_list):
-                if self.free_rect_list[i].contains(self.free_rect_list[j]):
+                if self.free_rect_list[j].contains(self.free_rect_list[i]):
                     self.free_rect_list.pop(i)
                     i -= 1
                     break
-                if self.free_rect_list[j].contains(self.free_rect_list[i]):
+                if self.free_rect_list[i].contains(self.free_rect_list[j]):
                     self.free_rect_list.pop(j)
                     j -= 1
                 j += 1
             i += 1
 
-    def _contact_point_score_node(self, x, y, width, height):
+    def _contact_point_score_node(self, x: int, y: int, width: int, height: int) -> int:
         score = 0
 
         if x == 0 or x + width == self.bin_width:
@@ -159,7 +137,7 @@ class TexturePackerMaxRects(TexturePacker):
 
         return score
 
-    def _split_free_node(self, free_rect, used_rect):
+    def _split_free_node(self, free_rect: Rect, used_rect: Rect) -> bool:
         # Test with SAT if the rectangles even intersect.
         if used_rect.x1 >= free_rect.x2 or used_rect.x2 <= free_rect.x1 or used_rect.y1 >= free_rect.y2 or used_rect.y2 <= free_rect.y1:
             return False
@@ -188,17 +166,19 @@ class TexturePackerMaxRects(TexturePacker):
 
         return True
 
-    def _find_position_for_new_node_bottom_left(self, width, height):
+    def _find_position_for_new_node_bottom_left(self, width: int, height: int) -> Tuple[Optional[Rect], bool, int, int]:
         bestRect = None
-        bestX = sys.maxint
-        bestY = sys.maxint
+        bestRotated = False
+        bestX = sys.maxsize
+        bestY = sys.maxsize
 
         for rect in self.free_rect_list:
             # Try to place the rectangle in upright (non-flipped) orientation.
             if rect.get_width() >= width and rect.get_height() >= height:
                 topSideY = rect.y1 + height
-                if topSideY < bestY and (topSideY == bestY and rect.x1 < bestX):
+                if topSideY < bestY or (topSideY == bestY and rect.x1 < bestX):
                     bestRect = Rect.InitWithDim(rect.x1, rect.y1, width, height)
+                    bestRotated = False
                     bestY = topSideY
                     bestX = rect.x1
 
@@ -206,15 +186,17 @@ class TexturePackerMaxRects(TexturePacker):
                 topSideY = rect.y1 + width
                 if topSideY < bestY or (topSideY == bestY and rect.x1 < bestX):
                     bestRect = Rect.InitWithDim(rect.x1, rect.y1, height, width)
+                    bestRotated = True
                     bestY = topSideY
                     bestX = rect.x1
 
-        return (bestRect, bestX, bestY)
+        return (bestRect, bestRotated, bestX, bestY)
 
-    def _find_position_for_new_node_best_short_side_fit(self, width, height):
+    def _find_position_for_new_node_best_short_side_fit(self, width: int, height: int) -> Tuple[Optional[Rect], bool, int, int]:
         bestNode = None
-        bestShortSideFit = sys.maxint
-        bestLongSideFit = sys.maxint
+        bestRotated = False
+        bestShortSideFit = sys.maxsize
+        bestLongSideFit = sys.maxsize
 
         for rect in self.free_rect_list:
             # Try to place the rectangle in upright (non-flipped) orientation.
@@ -226,6 +208,7 @@ class TexturePackerMaxRects(TexturePacker):
 
                 if shortSideFit < bestShortSideFit or (shortSideFit == bestShortSideFit and longSideFit < bestLongSideFit):
                     bestNode = Rect.InitWithDim(rect.x1, rect.y1, width, height)
+                    bestRotated = False
                     bestShortSideFit = shortSideFit
                     bestLongSideFit = longSideFit
 
@@ -237,15 +220,17 @@ class TexturePackerMaxRects(TexturePacker):
 
                 if flippedShortSideFit < bestShortSideFit or (flippedShortSideFit == bestShortSideFit and flippedLongSideFit < bestLongSideFit):
                     bestNode = Rect.InitWithDim(rect.x1, rect.y1, height, width)
+                    bestRotated = True
                     bestShortSideFit = flippedShortSideFit
                     bestLongSideFit = flippedLongSideFit
 
-        return (bestNode, bestShortSideFit, bestLongSideFit)
+        return (bestNode, bestRotated, bestShortSideFit, bestLongSideFit)
 
-    def _find_position_for_new_node_best_long_side_fit(self, width, height):
+    def _find_position_for_new_node_best_long_side_fit(self, width: int, height: int) -> Tuple[Optional[Rect], bool, int, int]:
         bestNode = None
-        bestLongSideFit = sys.maxint
-        bestShortSideFit = sys.maxint
+        bestRotated = False
+        bestLongSideFit = sys.maxsize
+        bestShortSideFit = sys.maxsize
 
         for rect in self.free_rect_list:
             # Try to place the rectangle in upright (non-flipped) orientation.
@@ -257,6 +242,7 @@ class TexturePackerMaxRects(TexturePacker):
 
                 if longSideFit < bestLongSideFit or (longSideFit == bestLongSideFit and shortSideFit < bestShortSideFit):
                     bestNode = Rect.InitWithDim(rect.x1, rect.y1, width, height)
+                    bestRotated = False
                     bestShortSideFit = shortSideFit
                     bestLongSideFit = longSideFit
 
@@ -268,15 +254,17 @@ class TexturePackerMaxRects(TexturePacker):
 
                 if longSideFit < bestLongSideFit or (longSideFit == bestLongSideFit and shortSideFit < bestShortSideFit):
                     bestNode = Rect.InitWithDim(rect.x1, rect.y1, height, width)
+                    bestRotated = True
                     bestShortSideFit = shortSideFit
                     bestLongSideFit = longSideFit
 
-        return (bestNode, bestShortSideFit, bestLongSideFit)
+        return (bestNode, bestRotated, bestShortSideFit, bestLongSideFit)
 
-    def _find_position_for_new_node_best_area_fit(self, width, height):
+    def _find_position_for_new_node_best_area_fit(self, width: int, height: int) -> Tuple[Optional[Rect], bool, int, int]:
         bestNode = None
-        bestAreaFit = sys.maxint
-        bestShortSideFit = sys.maxint
+        bestRotated = False
+        bestAreaFit = sys.maxsize
+        bestShortSideFit = sys.maxsize
 
         for rect in self.free_rect_list:
             areaFit = rect.get_area() - (width * height)
@@ -289,6 +277,7 @@ class TexturePackerMaxRects(TexturePacker):
 
                 if areaFit < bestAreaFit or (areaFit == bestAreaFit and shortSideFit < bestShortSideFit):
                     bestNode = Rect.InitWithDim(rect.x1, rect.y1, width, height)
+                    bestRotated = False
                     bestShortSideFit = shortSideFit
                     bestAreaFit = areaFit
 
@@ -299,13 +288,15 @@ class TexturePackerMaxRects(TexturePacker):
 
                 if areaFit < bestAreaFit or (areaFit == bestAreaFit and shortSideFit < bestShortSideFit):
                     bestNode = Rect.InitWithDim(rect.x1, rect.y1, height, width)
+                    bestRotated = True
                     bestShortSideFit = shortSideFit
                     bestAreaFit = areaFit
 
-        return (bestNode, bestAreaFit, bestShortSideFit)
+        return (bestNode, bestRotated, bestAreaFit, bestShortSideFit)
 
-    def _find_position_for_new_node_contact_point(self, width, height):
+    def _find_position_for_new_node_contact_point(self, width: int, height: int) -> Tuple[Optional[Rect], bool, int]:
         bestNode = None
+        bestRotated = False
         bestContactScore = -1
 
         for rect in self.free_rect_list:
@@ -314,12 +305,14 @@ class TexturePackerMaxRects(TexturePacker):
                 score = self._contact_point_score_node(rect.x1, rect.y1, width, height)
                 if score > bestContactScore:
                     bestNode = Rect.InitWithDim(rect.x1, rect.y1, width, height)
+                    bestRotated = False
                     bestContactScore = score
 
             if self.allow_rotations and (rect.get_width() >= height and rect.get_height() >= width):
                 score = self._contact_point_score_node(rect.x1, rect.y1, height, width)
                 if score > bestContactScore:
                     bestNode = Rect.InitWithDim(rect.x1, rect.y1, height, width)
+                    bestRotated = True
                     bestContactScore = score
 
-        return (bestNode, bestContactScore)
+        return (bestNode, bestRotated, bestContactScore)

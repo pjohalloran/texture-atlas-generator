@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "texture-atlas-generator"
+version = "0.2.0"
+description = "Texture atlas and image font generator for games and apps"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "PJ O Halloran", email = "pjohalloran@gmail.com" }]
+requires-python = ">=3.8"
+dependencies = [
+    "Pillow>=9.0",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Environment :: Console",
+    "Topic :: Multimedia :: Graphics",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "flake8",
+]
+
+[project.urls]
+Homepage = "https://github.com/pjohalloran/texture-atlas-generator"
+
+[project.scripts]
+texture-atlas-generator = "AtlasGenerator:main"
+texture-image-font-generator = "ImageFontGenerator:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+py-modules = ["AtlasGenerator", "ImageFontGenerator"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["atlas*", "data_parsers*", "geom*", "packing_algorithms*", "util*"]

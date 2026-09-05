@@ -1,17 +1,16 @@
-from math.rect import Rect
+from typing import Tuple
+
+from geom.rect import Rect
 
 
 class Node:
-    def __init__(self, x, y, width, height):
+    def __init__(self, x: int, y: int, width: int, height: int) -> None:
         self.x = x
         self.y = y
         self.width = width
         self.height = height
 
-    def does_rect_fit(self, width, height):
-        # 0 = bool, 1 = edgeCount
-        resultList = []
-
+    def does_rect_fit(self, width: int, height: int) -> Tuple[bool, int]:
         result = False
         edgeCount = 0
 
@@ -34,20 +33,23 @@ class Node:
         elif (height <= self.width and width <= self.height):
             result = True
 
-        resultList.append(result)
-        resultList.append(edgeCount)
+        return (result, edgeCount)
 
-        return (resultList)
-
-    def get_rect(self):
+    def get_rect(self) -> Rect:
         return Rect(self.x, self.y, self.x + self.width, self.y + self.height)
 
-    def validate(self, node):
+    def validate(self, node: "Node") -> bool:
         r1 = self.get_rect()
         r2 = node.get_rect()
         return (r1 != r2)
 
-    def merge(self, node):
+    def merge(self, node: "Node") -> bool:
+        # The horizontal (x1/x2) branches below mirror the vertical
+        # (y1/y2) branches above: require a matching span on the other
+        # axis (both endpoints, not just one) before checking adjacency.
+        # A prior version compared r1.y2 to r2.y1 here instead of r2.y2,
+        # a condition only satisfiable by a negative-height node - i.e.
+        # never - making horizontal merges permanently unreachable.
         ret = False
         r1 = self.get_rect()
         r2 = node.get_rect()
@@ -59,17 +61,17 @@ class Node:
 
         if (r1.x1 == r2.x1 and r1.x2 == r2.x2 and r1.y1 == r2.y2):
             self.y = node.y
-            self.height += node.get_rect().height
+            self.height += node.height
             ret = True
         elif (r1.x1 == r2.x1 and r1.x2 == r2.x2 and r1.y2 == r2.y1):
-            self.height += node.get_rect().height
+            self.height += node.height
             ret = True
-        elif (r1.y1 == r2.y1 and r1.y2 == r2.y1 and r1.x1 == r2.x2):
+        elif (r1.y1 == r2.y1 and r1.y2 == r2.y2 and r1.x1 == r2.x2):
             self.x = node.x
-            self.width += node.get_rect().width
+            self.width += node.width
             ret = True
-        elif (r1.y1 == r2.y1 and r1.y2 == r2.y1 and r1.x2 == r2.x1):
-            self.width += node.get_rect().width
+        elif (r1.y1 == r2.y1 and r1.y2 == r2.y2 and r1.x2 == r2.x1):
+            self.width += node.width
             ret = True
 
         return ret
