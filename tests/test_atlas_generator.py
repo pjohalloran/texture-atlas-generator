@@ -11,6 +11,7 @@ DEFAULT_ARGS = {
     'bg_color': '0,0,0,255',
     'maxrects_bin_size': '64',
     'verbose': False,
+    'padding': 1,
 }
 
 

@@ -51,7 +51,9 @@ logger = logging.getLogger(__name__)
 
 def pack_atlas(args: Dict[str, Any], dirPath: str, curr_size: int) -> Tuple[TexturePacker, Tuple[int, int, int], List[Tuple[str, ImageType]], bool]:
     """Open every image file directly inside dirPath and add it to a fresh
-    texture packer sized for curr_size.
+    texture packer sized for curr_size. Each texture reserves an extra
+    2*padding on top of its real size (padding on every side), so adjacent
+    packed textures end up with a real pixel gap between them.
 
     Returns a (texture_packer, pack_result, images_list, had_errors) tuple,
     where images_list holds (filename, PIL.Image) pairs for the images that
@@ -60,6 +62,7 @@ def pack_atlas(args: Dict[str, Any], dirPath: str, curr_size: int) -> Tuple[Text
     """
     texture_packer = get_packer(args['packing_algorithm'], curr_size, args['maxrects_heuristic'], args['allow_rotations'])
     childDirs = os.listdir(dirPath)
+    padding = int(args['padding'])
 
     imagesList = []
     had_errors = False
@@ -72,14 +75,17 @@ def pack_atlas(args: Dict[str, Any], dirPath: str, curr_size: int) -> Tuple[Text
 
         try:
             img = Image.open(file_path)
-            texture_packer.add_texture(img.size[0], img.size[1], currPath)
+            texture_packer.add_texture(img.size[0] + 2 * padding, img.size[1] + 2 * padding, currPath)
             imagesList.append((currPath, img))
         except (IOError):
             logger.error("PIL failed to open file: %s", file_path)
             had_errors = True
 
-    # Pack the textures into an atlas as efficiently as possible.
-    packResult = texture_packer.pack_textures(True, True)
+    # Pack the textures into an atlas as efficiently as possible. Padding is
+    # applied uniformly above instead of via oneBorderPixel, so both packing
+    # algorithms are handled identically (maxrects doesn't implement its own
+    # border spacing at all; ratcliff's is a fixed, non-configurable 1px).
+    packResult = texture_packer.pack_textures(True, False)
 
     return (texture_packer, packResult, imagesList, had_errors)
 
@@ -91,13 +97,24 @@ def create_atlas(texMode: str, dirPath: str, atlasPath: str, dirName: str, args:
 
     Returns False if any image in dirPath failed to open, True otherwise.
     """
+    padding = int(args['padding'])
     texture_packer, packResult, imagesList, had_errors = retry_with_growing_bin_size(
         lambda curr_size: pack_atlas(args, dirPath, curr_size),
         int(args['maxrects_bin_size']),
     )
 
-    borderSize = 1
-    atlas_data = AtlasData(name=dirName, width=packResult[0], height=packResult[1], color_mode=texMode, file_type=args['atlas_type'], border=borderSize)
+    # Shrink each texture's reserved (padded) footprint back down to its
+    # real content size, offsetting its position inward by the padding
+    # amount, so the manifest reports actual visible bounds and the pasted
+    # pixels sit centred within the padded gap reserved for them.
+    for tex in texture_packer.texArr:
+        tex.width -= 2 * padding
+        tex.height -= 2 * padding
+        tex.x += padding
+        tex.y += padding
+        tex.longestEdge = max(tex.width, tex.height)
+
+    atlas_data = AtlasData(name=dirName, width=packResult[0], height=packResult[1], color_mode=texMode, file_type=args['atlas_type'], border=padding)
     for tex in texture_packer.texArr:
         atlas_data.add_texture(tex)
 
@@ -151,6 +168,13 @@ def iterate_data_directory(texMode: str, atlasPath: str, resPath: str, args: Dic
     return all_ok
 
 
+def non_negative_int(value: str) -> int:
+    int_value = int(value)
+    if int_value < 0:
+        raise argparse.ArgumentTypeError('%s is negative - must be 0 or greater' % value)
+    return int_value
+
+
 def parse_args() -> Dict[str, Any]:
     arg_parser = argparse.ArgumentParser(description='Command line tool for creating texture atlases.')
 
@@ -160,11 +184,12 @@ def parse_args() -> Dict[str, Any]:
     arg_parser.add_argument('-m', '--atlas-mode', action='store', required=False, default='RGBA', choices=('RGB', 'RGBA'), help='The bit mode of the texture atlases')
     arg_parser.add_argument('-o', '--output-data-type', action='store', required=False, default='xml', choices=('xml', 'json'), help='The file output type of the atlas dictionary')
     arg_parser.add_argument('-i', '--images-dir', action='store', required=False, default='textures', help='The directory inside the resource path to search for images to batch into texture atlases.')
-    arg_parser.add_argument('-c', '--bg-color', action='store', required=False, default='128,128,128,255', help='The background color of the unused area in the texture atlas (e.g. 255,255,255,255).')
+    arg_parser.add_argument('-c', '--bg-color', action='store', required=False, default='0,0,0,0', help='The background color of the unused area in the texture atlas (e.g. 255,255,255,255). Defaults to fully transparent.')
     arg_parser.add_argument('-a', '--packing-algorithm', action='store', required=False, default='maxrects', choices=('ratcliff', 'maxrects'), help='The packing algorithm to use.')
     arg_parser.add_argument('-e', '--maxrects-heuristic', action='store', required=False, default='area', choices=('shortside', 'longside', 'area', 'bottomleft', 'contactpoint'), help='The packing heuristic/rule to use if the maxrects algorithm is selected.')
     arg_parser.add_argument('-s', '--maxrects-bin-size', action='store', required=False, default='1024', help='The size of atlas when using the maxrects algorithm.')
     arg_parser.add_argument('-x', '--allow-rotations', action='store_true', help='Allow the maxrects packer to rotate textures 90 degrees to improve packing density. Has no effect on the ratcliff algorithm, which always considers rotation.')
+    arg_parser.add_argument('-p', '--padding', action='store', required=False, default=1, type=non_negative_int, help='Empty pixel padding around each texture, to prevent filtering bleed between neighbours. Consider 2-4 if the atlas will be mipmapped.')
 
     args = vars(arg_parser.parse_args())
 
