@@ -11,7 +11,14 @@ license = { text = "MIT" }
 authors = [{ name = "PJ O Halloran", email = "pjohalloran@gmail.com" }]
 requires-python = ">=3.8"
 dependencies = [
-    "Pillow",
+    "Pillow>=9.0",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Environment :: Console",
+    "Topic :: Multimedia :: Graphics",
 ]
 
 [project.optional-dependencies]

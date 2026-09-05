@@ -10,41 +10,55 @@ It is written in python and uses the python image library to generate the textur
 * Pillow (https://python-pillow.org/)
 
 Optional:
-* venv (part of the python 3 standard library)
+* pipx (recommended way to install the tool itself, see below)
+* venv (part of the python 3 standard library, only needed for development)
 
 
 ## Installation ##
 
-My prefered way of installing the tool is to use a python venv to keep the tool and its dependencies off your system and into a sub directory that can be safely deleted when you are done.
+The recommended way to install the tool is with [pipx](https://pipx.pypa.io/),
+which installs it into its own isolated environment (so Pillow and friends
+never clash with anything else on your system) while still putting the
+`texture-atlas-generator` and `texture-image-font-generator` commands directly
+on your normal `PATH` - no venv to remember to activate.
 
-### OSX ###
+* Install pipx, if you don't already have it
+  * OSX (Homebrew): `brew install pipx`
+  * Other platforms: `python3 -m pip install --user pipx` then `pipx ensurepath`
 
-On OSX, i recommend using Brew to manage the install (but macports will work as well if you prefer).
+* Clone the project and install it
+```
+git clone https://github.com/pjohalloran/texture-atlas-generator
+cd texture-atlas-generator
+pipx install .
+```
 
-* Install python from brew
-`brew install python3`
+* Run the tool from anywhere
+```
+texture-atlas-generator --help
+texture-image-font-generator --help
+```
 
-* Clone the project
-`git clone https://github.com/pjohalloran/texture-atlas-generator`
+### Updating ###
 
-* Create the venv and install all the tools dependencies
-`cd texture-atlas-generator`
-`./create_virtualenv.sh`
-`. env/bin/activate`
+`pipx upgrade texture-atlas-generator` alone won't notice new commits, since a
+local path install has no version number for pipx to compare against. Instead:
 
-* Run the tool and see help instructions for 
-`cd src`
-`python AtlasGenerator.py --help`
+```
+git pull
+pipx install . --force
+```
 
-### Alternative: pip install ###
+### Uninstalling ###
 
-The project also installs as a regular Python package, which puts
-`texture-atlas-generator` and `texture-image-font-generator` on your PATH
-instead of needing to `cd src` first:
+`pipx uninstall texture-atlas-generator` removes both commands (they're
+installed together as a single pipx app).
 
-`pip install -e .`
-`texture-atlas-generator --help`
-`texture-image-font-generator --help`
+### Alternative: plain pip install ###
+
+If you'd rather not use pipx, `pip install -e .` (ideally inside a venv you
+create yourself) works too and gives you an editable install that picks up
+source changes immediately - see "Development" below.
 
 
 ## Directory Structure ##
@@ -78,7 +92,22 @@ output will collide with the loose-images atlas's filename. Avoid naming a
 subdirectory the same as your images-dir.
 
 
-## Running Tests ##
+## Development ##
+
+If you're editing the source rather than just using the tool, a venv-based
+editable install is more convenient than pipx (source changes take effect
+immediately, no reinstalling needed):
+
+* Create the venv and install all the tool's dependencies
+`cd texture-atlas-generator`
+`./create_virtualenv.sh`
+`. env/bin/activate`
+
+* Run the tool straight from source
+`cd src`
+`python AtlasGenerator.py --help`
+
+### Running Tests ###
 
 * Install the test dependencies (from the repo root, with the venv activated)
 `pip install -r requirements-dev.txt` (or `pip install -e ".[dev]"`)
