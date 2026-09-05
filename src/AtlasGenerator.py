@@ -123,19 +123,31 @@ def create_atlas(texMode: str, dirPath: str, atlasPath: str, dirName: str, args:
 def iterate_data_directory(texMode: str, atlasPath: str, resPath: str, args: Dict[str, Any]) -> bool:
     """Create one atlas per immediate subdirectory of resPath, treating each
     subdirectory's name as the atlas name and its contents as the images to
-    pack into it.
+    pack into it. Images placed directly in resPath (not inside any
+    subdirectory) are packed into one additional atlas, named after resPath
+    itself.
 
     Returns False if any atlas had an image that failed to open, True
     otherwise.
     """
     all_ok = True
-    childDirs = os.listdir(resPath)
-    for currPath in childDirs:
+    has_root_images = False
+    for currPath in os.listdir(resPath):
         if (currPath.startswith(".")):
             continue
-        if (os.path.isdir(os.path.join(resPath, currPath))):
-            if not create_atlas(texMode, os.path.join(resPath, currPath), atlasPath, currPath, args):
+        full_path = os.path.join(resPath, currPath)
+        if (os.path.isdir(full_path)):
+            if not create_atlas(texMode, full_path, atlasPath, currPath, args):
                 all_ok = False
+        else:
+            has_root_images = True
+
+    if has_root_images:
+        if not create_atlas(texMode, resPath, atlasPath, os.path.basename(resPath), args):
+            all_ok = False
+    elif not any(os.path.isdir(os.path.join(resPath, p)) for p in os.listdir(resPath) if not p.startswith(".")):
+        logger.warning("%s contains no images and no subdirectories - nothing to pack", resPath)
+
     return all_ok
 
 

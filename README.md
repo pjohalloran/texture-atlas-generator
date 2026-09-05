@@ -47,6 +47,37 @@ instead of needing to `cd src` first:
 `texture-image-font-generator --help`
 
 
+## Directory Structure ##
+
+`AtlasGenerator.py` expects your source images under `<res-path>/<images-dir>`
+(`-i/--images-dir` defaults to `textures`). Within that directory, both of these are
+supported and can be mixed:
+
+* Images placed inside a named subdirectory are packed into their own atlas, named
+  after that subdirectory.
+* Images placed directly in `<images-dir>` itself (no subdirectory) are packed into
+  one additional atlas, named after `<images-dir>`.
+
+```
+<res-path>/
+  textures/            <- matches -i/--images-dir (default: textures)
+    player.png         <- loose images here are packed into one atlas named "textures"
+    sprites/           <- becomes its own atlas named "sprites"
+      enemy.png
+    ui/                <- becomes its own atlas named "ui"
+      button.png
+  atlases/             <- output (auto-created and cleared on each run)
+    textures.png / textures.xml
+    sprites.png / sprites.xml
+    ui.png / ui.xml
+```
+
+Note: if a subdirectory happens to share `<images-dir>`'s own name (e.g. a
+`textures/textures/` subdirectory when using the default `-i textures`), its atlas
+output will collide with the loose-images atlas's filename. Avoid naming a
+subdirectory the same as your images-dir.
+
+
 ## Running Tests ##
 
 * Install the test dependencies (from the repo root, with the venv activated)

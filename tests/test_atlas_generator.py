@@ -74,3 +74,56 @@ def test_iterate_data_directory_true_when_everything_opens(tmp_path):
     ok = AtlasGenerator.iterate_data_directory('RGBA', str(atlases_dir), str(textures_dir), DEFAULT_ARGS)
 
     assert ok is True
+
+
+def test_iterate_data_directory_packs_loose_root_images_into_own_atlas(tmp_path):
+    # Regression test: images placed directly in the images-dir (not inside
+    # any subdirectory) used to be silently skipped entirely - no atlas, no
+    # warning, no error, exit code 0. They're now packed into their own
+    # atlas, named after the images-dir itself.
+    textures_dir = tmp_path / "textures"
+    textures_dir.mkdir()
+    Image.new("RGBA", (8, 8), (255, 0, 0, 255)).save(textures_dir / "a.png")
+    Image.new("RGBA", (8, 8), (0, 255, 0, 255)).save(textures_dir / "b.png")
+
+    atlases_dir = tmp_path / "atlases"
+    atlases_dir.mkdir()
+
+    ok = AtlasGenerator.iterate_data_directory('RGBA', str(atlases_dir), str(textures_dir), DEFAULT_ARGS)
+
+    assert ok is True
+    root_atlas = atlases_dir / "textures.png"
+    assert root_atlas.is_file()
+    img = Image.open(root_atlas)
+    assert img.size[0] > 0 and img.size[1] > 0
+
+
+def test_iterate_data_directory_handles_mixed_root_images_and_subdirectories(tmp_path):
+    textures_dir = tmp_path / "textures"
+    textures_dir.mkdir()
+    Image.new("RGBA", (8, 8), (255, 0, 0, 255)).save(textures_dir / "root1.png")
+    _make_sprites_dir(textures_dir, broken=False)  # tmp_path/textures/sprites
+
+    atlases_dir = tmp_path / "atlases"
+    atlases_dir.mkdir()
+
+    ok = AtlasGenerator.iterate_data_directory('RGBA', str(atlases_dir), str(textures_dir), DEFAULT_ARGS)
+
+    assert ok is True
+    assert (atlases_dir / "textures.png").is_file()
+    assert (atlases_dir / "sprites.png").is_file()
+
+
+def test_iterate_data_directory_warns_and_creates_nothing_when_empty(tmp_path, caplog):
+    textures_dir = tmp_path / "textures"
+    textures_dir.mkdir()
+
+    atlases_dir = tmp_path / "atlases"
+    atlases_dir.mkdir()
+
+    with caplog.at_level("WARNING"):
+        ok = AtlasGenerator.iterate_data_directory('RGBA', str(atlases_dir), str(textures_dir), DEFAULT_ARGS)
+
+    assert ok is True
+    assert list(atlases_dir.iterdir()) == []
+    assert any("nothing to pack" in record.message for record in caplog.records)
